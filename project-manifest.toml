@@ -1,0 +1,27 @@
+# Project Manifest — Treasury Ship
+
+[project]
+name = "Treasury Ship"
+description = "Audit and improvement cycle on an existing project-management app (Jira/Trello-style)"
+prefix = "ts"
+
+[roles]
+tower = true
+trench = true
+herald = true
+warden = true
+
+[build]
+stack = "typescript"
+workflow = "beads"
+
+[beads]
+command = "br"
+sync_command = "br sync --flush-only"
+
+[integrations]
+cass_memory = true
+
+# [herald]
+# voice = "sardonic-technical"
+# content_strategy = "pre-launch"
