@@ -28,6 +28,13 @@ Random notes to incorporate somewhere, sometime.
   build scripts (esbuild, leveldown, ssh2, etc.). Need to run `pnpm approve-builds`
   to whitelist them. Not documented.
 
+- **E2E tests require Colima/Docker config not documented.** Testcontainers doesn't
+  auto-detect Colima. Need two env vars:
+  `DOCKER_HOST=unix:///Users/gjw/.colima/default/docker.sock`
+  `TESTCONTAINERS_DOCKER_SOCKET_OVERRIDE=/var/run/docker.sock`
+  Plus `~/.testcontainers.properties` with `docker.host=unix:///Users/gjw/.colima/default/docker.sock`.
+  None of this is in the README or setup docs.
+
 - **Elastic Beanstalk — worth investigating migration.** Not deprecated but widely
   considered legacy. Fargate is the natural upgrade path since a Dockerfile already
   exists. WebSocket support via ALB needs verification (sticky sessions, long-lived
