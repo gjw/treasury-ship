@@ -321,3 +321,81 @@ that catches render errors and shows a "Something went wrong" + "Try Again" butt
 - `terraform/` has modular config for Elastic Beanstalk, S3/CloudFront, IAM roles
 - Per-environment configs in `terraform/environments/{env}/`
 - Secrets managed via AWS SSM Parameter Store
+
+---
+
+## Architecture Assessment
+
+### 3 Strongest Decisions
+
+**1. Unified Document Model.** One `documents` table, discriminated by `document_type`,
+type-specific data in `properties` JSONB. This is the defining architectural choice.
+It means: no migrations when adding a new document type, shared editor/collaboration
+infrastructure, simple association model, and a single code path for CRUD. The team
+committed fully — there are no rogue content tables. Well-executed.
+
+**2. Real-time collaboration via CRDTs (Yjs), not OT.** CRDTs converge
+mathematically without a central arbiter, which simplifies the server to a relay +
+persistence layer. The choice to store both Yjs binary state AND TipTap JSON
+(converted on each save) means REST reads work without understanding CRDTs. Smart
+dual-write.
+
+**3. Defensive deploy pipeline.** The deploy script builds Docker locally, tests
+that it starts, and verifies migration file counts before pushing to AWS. This
+catches the class of "it builds but doesn't boot" failures that plague Docker
+deploys. Combined with numbered migrations that run on container startup, it's a
+reliable pipeline.
+
+### 3 Weakest Decisions (or Risks)
+
+**1. In-memory Y.Doc storage with no hard limits.** The collaboration server keeps
+a `Map<string, Y.Doc>` in memory with no eviction policy beyond a 30-second grace
+period after all clients disconnect. There's no ceiling on concurrent documents.
+Estimated safe capacity is ~500-1000 concurrent docs before memory pressure. For a
+government PM tool this is probably fine today, but there's no circuit breaker if
+it isn't.
+
+**2. Visibility check baked into SQL, not middleware.** Access control is a boolean
+expression inside each query's WHERE clause (`visibility = 'workspace' OR created_by
+= $user OR role = 'admin'`). This means every new route that touches documents must
+remember to include the filter. A missed filter = data leak. A middleware-based
+approach would be harder to forget. The codebase uses a `VISIBILITY_FILTER_SQL`
+helper in some places but not all.
+
+**3. Admin routes skip Zod validation.** User-facing routes consistently use Zod
+schemas, but admin routes use manual `if (!name)` checks. Admin routes are behind
+`superAdminMiddleware` so the blast radius is limited, but it's an inconsistency
+that could bite during a refactor.
+
+### Onboarding Friction
+
+(Documented from actual first-run experience)
+
+- pnpm assumed globally installed, not documented
+- Root `pnpm install` doesn't install api deps — need separate install in `api/`
+- `comply` CLI (Python) required for pre-commit hooks, not in setup docs
+- `pnpm approve-builds` needed for ignored build scripts, not documented
+- `docker-compose.yml` has obsolete `version` attribute warning
+- Node v20 EOL approaching (~April 2026)
+
+### 10x Risks
+
+**If this app needs to serve 10x more users or documents:**
+
+1. **Collab server memory** — the in-memory Y.Doc map is the first thing that breaks.
+   Would need either Redis-backed Yjs storage or horizontal scaling with sticky
+   sessions routing users to the right server.
+
+2. **Single PostgreSQL instance** — no read replicas, no connection pooling layer
+   (uses `pg.Pool` directly). Under heavy read load, the visibility-check-in-SQL
+   pattern means every document read hits the DB.
+
+3. **WebSocket on single server** — the collab server and REST API share one process.
+   A misbehaving WebSocket client (or a burst of connections) could degrade REST
+   response times. Separating these into independent services would be the scaling
+   move.
+
+4. **Full table scans on properties JSONB** — some queries filter on `properties->>'state'`
+   or `properties->>'assignee_id'`. These have partial indexes for common cases,
+   but complex filters could degrade. The 58 existing indexes are well-chosen but
+   JSONB query performance is harder to predict at scale.
