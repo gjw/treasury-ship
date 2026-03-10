@@ -1,0 +1,16 @@
+= Hello World: Toolchain Verification
+:revealjs_theme: white
+:revealjs_slideNumber: true
+:revealjs_hash: true
+
+== Asciidoctor Reveal.js
+
+Toolchain is working!
+
+[%step]
+* asciidoctor-revealjs 5.2.0
+* Renders `.adoc` → Reveal.js HTML slides
+
+== Next Steps
+
+Replace this deck with the real presentation.
