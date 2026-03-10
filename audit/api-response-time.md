@@ -44,6 +44,46 @@ on every navigation click.
 
 ## Results
 
+### P95 Latency by Concurrency
+
+```mermaid
+xychart-beta
+    title "P95 Latency (ms) by Concurrency Level"
+    x-axis ["c=10", "c=25", "c=50"]
+    y-axis "Latency (ms)" 0 --> 200
+    bar "issues" [68.8, 96.6, 176.8]
+    bar "projects" [21.5, 30.5, 52.9]
+    bar "weeks" [13.5, 27.6, 48.8]
+    bar "programs" [10.9, 24.1, 40.7]
+    bar "documents/:id" [5.9, 13.1, 22.9]
+```
+
+### Throughput (Requests/sec)
+
+```mermaid
+xychart-beta
+    title "Throughput (req/s) by Concurrency Level"
+    x-axis ["c=10", "c=25", "c=50"]
+    y-axis "Requests/sec" 0 --> 3000
+    bar "issues" [249, 299, 301]
+    bar "projects" [909, 1018, 1062]
+    bar "weeks" [1134, 1155, 1171]
+    bar "programs" [1401, 1388, 1434]
+    bar "documents/:id" [2510, 2759, 2788]
+```
+
+### Response Size vs P95 Latency (c=50)
+
+```mermaid
+xychart-beta
+    title "Response Size (KB) vs P95 Latency — Issues is the outlier"
+    x-axis ["documents/:id (1.4KB)", "programs (1.6KB)", "weeks (4.2KB)", "projects (13.3KB)", "issues (312KB)"]
+    y-axis "P95 Latency (ms)" 0 --> 200
+    bar [22.9, 40.7, 48.8, 52.9, 176.8]
+```
+
+### Raw Data
+
 ### Concurrency = 10
 
 | Endpoint | P50 | P95 | P99 | RPS | Response Size |
