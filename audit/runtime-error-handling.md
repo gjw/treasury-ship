@@ -193,15 +193,46 @@ Analyzed WebSocket reconnection logic in `y-websocket` provider, React Query ret
 
 ---
 
+## Manual Test Results
+
+Testing performed by Chair on 2026-03-10 against localhost dev server.
+
+**Method:** `window.fetch` override to simulate network failures (DevTools Offline mode doesn't work on localhost). Server killed/restarted for WebSocket disconnect tests.
+
+| Test | Result | Notes |
+|------|--------|-------|
+| Console errors (normal navigation) | **0 errors, 0 warnings** | Clean baseline across 8 pages |
+| Network disconnect during editing | **Pass** | Data survived reconnect |
+| Concurrent editing with disconnect | **Pass** | Edits merged correctly. Minor: HSL color format warning (`hsl(142, 70%, 60%)`) logged for user presence colors |
+| Malformed input (empty, long, XSS, SQLi) | **Pass** | All handled correctly |
+| 3G throttle | **Skipped** | Localhost not affected by DevTools throttling |
+| Server logs | **1 error** | AWS Bedrock `CredentialsProviderError` in `ai-analysis.ts:248` — expected, no AWS creds locally. Gracefully caught. |
+| Session timeout edge cases | **Pass** | |
+| 8a: MyWeek create failure | **Pass** | Error state shown, queries logged in console |
+| 8b: Reconciliation move failure | **Pass** | Toast displayed (brief). Mutation failures logged. |
+| 8c: Document load failure | **FAIL** | WebSocket provider enters infinite reconnect loop. Console floods with `y-websocket` connection errors. Page stuck in loading state forever. No error UI, no timeout, no give-up. |
+
+### Key Manual Finding: Infinite WebSocket Reconnect (8c)
+
+**Reproduction:**
+1. Override `window.fetch` to reject all requests
+2. Navigate to any document page (`/documents/:id`)
+
+**Observed behavior:** The `y-websocket` provider repeatedly attempts WebSocket connection (`ws://localhost:3001/collaboration/issue:...`) with no backoff and no maximum retry count. Console fills with connection errors. Page shows infinite loading spinner. No user-facing error message or recovery action.
+
+**Confirmed from static analysis:** This aligns with finding S3 (UnifiedDocumentPage ignores query error state) and finding S5 (Editor WebSocket errors not surfaced to UI).
+
+---
+
 ## Audit Deliverable Summary
 
 | Metric | Your Baseline |
 |--------|---------------|
-| Console errors during normal usage | **Requires manual test** (see checklist) |
-| Unhandled promise rejections (server) | **2 critical** (collaboration persistence), **0 global handlers** |
-| Network disconnect recovery | **Partial** (auto-reconnect yes, but persistence failures silent, session extend has no retry) |
+| Console errors during normal usage | **0** |
+| Unhandled promise rejections (server) | **2 critical** (collaboration persistence fire-and-forget), **0 global handlers** |
+| Network disconnect recovery | **Partial** — data survives reconnect, but WebSocket has no give-up/error UI on sustained failure |
 | Missing error boundaries | **6 unprotected routes**, **1 partial** (Editor init), **13 tab components**, **6 providers** |
-| Silent failures identified | **10 instances** across mutations, API calls, and WebSocket sync (see Section 3 for reproduction steps) |
+| Silent failures identified | **10 from static analysis**, **1 confirmed in manual testing** (infinite WebSocket reconnect with no error UI) |
 
 ---
 
@@ -213,7 +244,7 @@ Analyzed WebSocket reconnection logic in `y-websocket` provider, React Query ret
 
 1. **U1+U2: Collaboration persistence fire-and-forget** (DATA LOSS) — Add `.catch()` with retry logic to `persistDocument()` calls in collaboration/index.ts. Users can lose edits when WebSocket closes if DB write fails.
 
-2. **S1: MyWeekPage silent creation failures** (USER CONFUSION) — Add error feedback when plan/retro/standup creation fails. Users currently click repeatedly with no indication of failure.
+2. **8c + S3 + S5: WebSocket infinite reconnect with no error UI** (USER CONFUSION / DATA LOSS RISK) — Add a retry limit or exponential backoff to WebSocket reconnection. After N failures, show an error state with "Connection lost — retry" button instead of infinite loading. Surface `wsProvider` disconnect status in the Editor UI.
 
 3. **U3: Add process-level unhandled rejection handler** (SERVER STABILITY) — A single unhandled promise rejection crashes the entire server with no logging.
 
