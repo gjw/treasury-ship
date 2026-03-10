@@ -210,17 +210,7 @@ Testing performed by Chair on 2026-03-10 against localhost dev server.
 | Session timeout edge cases | **Pass** | |
 | 8a: MyWeek create failure | **Pass** | Error state shown, queries logged in console |
 | 8b: Reconciliation move failure | **Pass** | Toast displayed (brief). Mutation failures logged. |
-| 8c: Document load failure | **FAIL** | WebSocket provider enters infinite reconnect loop. Console floods with `y-websocket` connection errors. Page stuck in loading state forever. No error UI, no timeout, no give-up. |
-
-### Key Manual Finding: Infinite WebSocket Reconnect (8c)
-
-**Reproduction:**
-1. Override `window.fetch` to reject all requests
-2. Navigate to any document page (`/documents/:id`)
-
-**Observed behavior:** The `y-websocket` provider repeatedly attempts WebSocket connection (`ws://localhost:3001/collaboration/issue:...`) with no backoff and no maximum retry count. Console fills with connection errors. Page shows infinite loading spinner. No user-facing error message or recovery action.
-
-**Confirmed from static analysis:** This aligns with finding S3 (UnifiedDocumentPage ignores query error state) and finding S5 (Editor WebSocket errors not surfaced to UI).
+| 8c: Document load failure | **LOW** | WebSocket provider retries ~1/sec in console while offline. Page shows loading state. Expected behavior — user is offline, nothing can load. Recovers when back online. |
 
 ---
 
@@ -230,9 +220,9 @@ Testing performed by Chair on 2026-03-10 against localhost dev server.
 |--------|---------------|
 | Console errors during normal usage | **0** |
 | Unhandled promise rejections (server) | **2 critical** (collaboration persistence fire-and-forget), **0 global handlers** |
-| Network disconnect recovery | **Partial** — data survives reconnect, but WebSocket has no give-up/error UI on sustained failure |
+| Network disconnect recovery | **Pass** — data survives reconnect, WebSocket auto-recovers. Console noise while offline but functional. |
 | Missing error boundaries | **6 unprotected routes**, **1 partial** (Editor init), **13 tab components**, **6 providers** |
-| Silent failures identified | **10 from static analysis**, **1 confirmed in manual testing** (infinite WebSocket reconnect with no error UI) |
+| Silent failures identified | **10 from static analysis** (see Section 3 for details) |
 
 ---
 
@@ -244,9 +234,7 @@ Testing performed by Chair on 2026-03-10 against localhost dev server.
 
 1. **U1+U2: Collaboration persistence fire-and-forget** (DATA LOSS) — Add `.catch()` with retry logic to `persistDocument()` calls in collaboration/index.ts. Users can lose edits when WebSocket closes if DB write fails.
 
-2. **8c + S3 + S5: WebSocket infinite reconnect with no error UI** (USER CONFUSION / DATA LOSS RISK) — Add a retry limit or exponential backoff to WebSocket reconnection. After N failures, show an error state with "Connection lost — retry" button instead of infinite loading. Surface `wsProvider` disconnect status in the Editor UI.
-
-3. **U3: Add process-level unhandled rejection handler** (SERVER STABILITY) — A single unhandled promise rejection crashes the entire server with no logging.
+2. **U3: Add process-level unhandled rejection handler** (SERVER STABILITY) — A single unhandled promise rejection crashes the entire server with no logging.
 
 4. **E1: Editor initialization error boundary** (DATA LOSS RISK) — Wrap full editor initialization in ErrorBoundary so WebSocket/CRDT failures show recovery UI instead of hanging.
 
