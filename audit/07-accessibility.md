@@ -249,7 +249,7 @@ This requires addressing only two CSS patterns:
 
 ## Appendix: Raw Data
 
-- Full axe-core results: `audit/a11y-axe-results.json`
-- Contrast failure detail: `audit/a11y-contrast-details.json`
+- Full axe-core results: `audit/07-a11y-axe-results.json`
+- Contrast failure detail: `audit/07-a11y-contrast-details.json`
 - Audit script: `scripts/a11y-audit.ts`
 - Contrast detail script: `scripts/a11y-contrast-detail.ts`

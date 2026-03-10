@@ -15,7 +15,7 @@
 - **Pattern search** for: error boundaries, try/catch, `.catch()`, floating promises, empty catch blocks, `process.on`, `unhandledRejection`, loading/error states
 - **Component tree mapping** of ErrorBoundary coverage across all routes
 - **API route audit** of all 28 route files for input validation (Zod usage, parameterized queries)
-- **Manual testing checklist** provided separately (`audit/runtime-error-manual-tests.md`) for browser-based measurements (console errors, network disconnect, throttling)
+- **Manual testing checklist** provided separately (`audit/06-runtime-error-manual-tests.md`) for browser-based measurements (console errors, network disconnect, throttling)
 
 ### Scope
 
@@ -189,7 +189,7 @@ Analyzed WebSocket reconnection logic in `y-websocket` provider, React Query ret
 | N2 | **HIGH** | `api/src/collaboration/index.ts:186, 769` | If persistence fails during disconnect/reconnect cycle, edits are silently lost (same as U1/U2). |
 | N3 | **MEDIUM** | `web/src/hooks/useSessionTimeout.ts:107-121` | Session extend fails → immediate logout. No retry, no grace period. Network blip during active use logs user out. |
 
-**Note:** Full network disconnect recovery requires manual browser testing. See `audit/runtime-error-manual-tests.md`.
+**Note:** Full network disconnect recovery requires manual browser testing. See `audit/06-runtime-error-manual-tests.md`.
 
 ---
 

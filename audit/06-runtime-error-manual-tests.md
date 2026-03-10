@@ -1,7 +1,7 @@
 # Manual Testing Checklist: Runtime Error Handling
 
 **For:** Chair (manual browser testing)
-**Companion to:** `audit/runtime-error-handling.md`
+**Companion to:** `audit/06-runtime-error-handling.md`
 **Date:** 2026-03-10
 
 Report results back to Trench. Use the **Result** column — write what you observed.
