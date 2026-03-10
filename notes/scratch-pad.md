@@ -35,6 +35,11 @@ Random notes to incorporate somewhere, sometime.
   Plus `~/.testcontainers.properties` with `docker.host=unix:///Users/gjw/.colima/default/docker.sock`.
   None of this is in the README or setup docs.
 
+- **Building slides.** `./presentation/build.sh` renders all `.adoc` files to
+  Reveal.js HTML. Requires `asciidoctor-revealjs` gem (installed via Homebrew Ruby
+  at `/opt/homebrew/lib/ruby/gems/4.0.0/bin/asciidoctor-revealjs`). The build script
+  falls back to that path if the command isn't on `$PATH`.
+
 - **Elastic Beanstalk — worth investigating migration.** Not deprecated but widely
   considered legacy. Fargate is the natural upgrade path since a Dockerfile already
   exists. WebSocket support via ALB needs verification (sticky sessions, long-lived
