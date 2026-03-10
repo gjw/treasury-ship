@@ -8,21 +8,28 @@
 
 ### Tools Used
 
-- **Vitest 4.0.17** — unit test runner for both `api/` and `web/` packages
-- **@vitest/coverage-v8** — V8-based code coverage provider
-- **3x flaky detection** — each suite run 3 times to identify non-deterministic tests
-- **Manual inventory** — cross-referenced source files against test files for coverage gaps
+- **Vitest 4.0.17** with **@vitest/coverage-v8** — unit test runner + V8 coverage for
+  `api/` and `web/` packages
+- **Playwright 1.x** with **testcontainers** — E2E suite (71 spec files) using
+  per-worker PostgreSQL containers for full isolation
+- **3x flaky detection** — unit suites run 3 times each; E2E suite has built-in retry
+  (`retries: 1`) which identifies flaky tests automatically
+- **Manual flow mapping** — cross-referenced critical user flows against E2E spec
+  file names and test descriptions
 
 ### Commands
 
 ```bash
-# API unit tests with coverage
+# Unit tests with coverage
 pnpm --filter @ship/api test -- --coverage
+pnpm --filter @ship/web exec vitest run --coverage
 
-# Web unit tests
-pnpm --filter @ship/web test -- --run
+# E2E full suite (4 workers, testcontainers isolation)
+TESTCONTAINERS_DOCKER_SOCKET_OVERRIDE=/var/run/docker.sock \
+DOCKER_HOST=unix://$HOME/.colima/default/docker.sock \
+PLAYWRIGHT_WORKERS=4 npx playwright test --reporter=line
 
-# Flaky detection (repeat 3x, compare results)
+# Flaky detection (unit — manual 3x; E2E — built-in retry)
 pnpm --filter @ship/api test -- --run   # x3
 pnpm --filter @ship/web test -- --run   # x3
 ```
@@ -33,102 +40,108 @@ pnpm --filter @ship/web test -- --run   # x3
 |----------|-------|
 | Node.js | v20.20.1 |
 | Vitest | 4.0.17 |
+| Playwright | testcontainers + Chromium |
 | Coverage | @vitest/coverage-v8 |
-| OS | macOS Darwin 25.3.0 |
+| OS | macOS Darwin 25.3.0 (aarch64) |
+| Docker | Colima + Docker Engine 29.3.0 |
+
+---
+
+## Audit Deliverable
+
+| Metric | Your Baseline |
+|--------|---------------|
+| Total tests | 1,471 (451 API unit + 151 web unit + 869 E2E) |
+| Pass / Fail / Flaky | 1,454 / 14 / 3 |
+| Suite runtime | API: 11.5s, Web: 1.1s, E2E: 8.9min |
+| Critical flows with zero coverage | See [Critical Flow Mapping](#critical-user-flow-mapping) |
+| Code coverage % | web: 19.5% / api: 40.3% |
 
 ---
 
 ## Suite Summary
 
-| Suite | Files | Tests | Passed | Failed | Runtime |
-|-------|-------|-------|--------|--------|---------|
-| API unit | 28 | 451 | 451 | 0 | ~11.5s |
-| Web unit | 16 | 151 | 138 | 13 | ~1.1s |
-| E2E (Playwright) | 71 | ~882 | Not run* | — | — |
-| **Total** | **115** | **~1,484** | — | **13** | — |
+| Suite | Files | Tests | Passed | Failed | Flaky | Runtime |
+|-------|-------|-------|--------|--------|-------|---------|
+| API unit (Vitest) | 28 | 451 | 451 | 0 | 0 | ~11.5s |
+| Web unit (Vitest) | 16 | 151 | 138 | 13 | 0 | ~1.1s |
+| E2E (Playwright) | 71 | 869 | 865 | 1 | 3 | 8.9min |
+| **Total** | **115** | **1,471** | **1,454** | **14** | **3** | — |
 
-*E2E tests not run in this audit — they require a live dev server and are covered by the `/e2e-test-runner` workflow. Count is from `test(` occurrences in spec files.
+---
+
+## E2E Test Results
+
+**71 spec files, 869 tests, 865 passed, 1 failed, 3 flaky, 8.9 min (4 workers)**
+
+### Failed (1)
+
+| Test | File | Root Cause |
+|------|------|-----------|
+| canceling a comment removes the highlight | `inline-comments.spec.ts:118` | Comment cancel doesn't clear highlight styling — likely a real bug in comment-cancel handler |
+
+### Flaky (3 — passed on retry)
+
+| Test | File | Pattern |
+|------|------|---------|
+| plan edits visible on /my-week after nav | `my-week-stale-data.spec.ts:28` | Stale cache — page doesn't refetch after edit |
+| retro edits visible on /my-week after nav | `my-week-stale-data.spec.ts:63` | Same stale cache pattern |
+| Allocation grid shows person data | `weekly-accountability.spec.ts:384` | Timing — data not ready on first render |
+
+**Root cause pattern:** All 3 flaky tests involve navigating away from a page where an edit was made, then navigating back and expecting fresh data. This is a cache invalidation timing issue.
+
+---
+
+## Web Unit Tests — 13 Deterministic Failures
+
+**16 files, 151 tests, 138 passed, 13 failed, ~1.1s**
+
+### `document-tabs.test.ts` — 9 failures
+
+Tab configuration was refactored (tab order changed, sprint gained tabs, tab IDs
+renamed) but tests were not updated. **Stale tests, not bugs.**
+
+### `DetailsExtension.test.ts` — 3 failures
+
+Extension refactored to use structured content (`detailsSummary detailsContent`)
+instead of generic `block+`. Tests assert old structure. **Stale tests, not bugs.**
+
+### `useSessionTimeout.test.ts` — 1 failure
+
+`onTimeout` fires even after dismiss. Likely a race in fake timer handling or dismiss
+logic changed. **May be a real bug or stale test — needs investigation.**
 
 ---
 
 ## API Unit Tests — All Passing
 
-**28 test files, 451 tests, 0 failures, ~11.5s runtime**
+**28 files, 451 tests, 0 failures, ~11.5s**
 
-| Test File | Tests | Time |
-|-----------|-------|------|
-| weeks.test.ts | 41 | 402ms |
-| extractHypothesis.test.ts | 36 | 72ms |
-| collaboration.test.ts | 30 | 117ms |
-| business-days.test.ts | 27 | 76ms |
-| workspaces.test.ts | 25 | 247ms |
-| documents.test.ts | 19 | 305ms |
-| documents-visibility.test.ts | 21 | 276ms |
-| api-content-preservation.test.ts | 18 | 112ms |
-| standups.test.ts | 17 | 232ms |
-| backlinks.test.ts | 17 | 264ms |
-| auth.test.ts (routes) | 16 | 950ms |
-| auth.test.ts (middleware) | 15 | 86ms |
-| projects.test.ts | 14 | 111ms |
-| activity.test.ts | 13 | 122ms |
-| accountability.test.ts | 13 | 73ms |
-| associations-regression.test.ts | 12 | 247ms |
-| issues-history.test.ts | 12 | 103ms |
-| issues.test.ts | 21 | 216ms |
-| transformIssueLinks.test.ts | 21 | 74ms |
-| search.test.ts | 11 | 126ms |
-| project-retros.test.ts | 11 | 222ms |
-| sprint-reviews.test.ts | 10 | 241ms |
-| reports-to.test.ts | 7 | 198ms |
-| files.test.ts | 7 | 169ms |
-| iterations.test.ts | 7 | 108ms |
-| circular-reference.test.ts | 5 | 92ms |
-| api-tokens.test.ts | 4 | 90ms |
-| health.test.ts | 1 | 102ms |
+No issues. Consistently green across all 3 flaky-detection runs.
 
 ---
 
-## Web Unit Tests — 13 Failures
+## Flaky Detection (3x Runs)
 
-**16 test files, 151 tests, 138 passed, 13 failed, ~1.1s runtime**
+### Unit Tests
 
-### Failing Tests
+| Suite | Run 1 | Run 2 | Run 3 | Verdict |
+|-------|-------|-------|-------|---------|
+| API (451 tests) | 451 pass | 451 pass | 451 pass | **Stable** |
+| Web (151 tests) | 138 pass, 13 fail | 138 pass, 13 fail | 138 pass, 13 fail | **Stable** (failures are deterministic) |
 
-**`document-tabs.test.ts` — 9 failures**
+### E2E Tests
 
-| Test | Root Cause |
-|------|-----------|
-| returns tabs for project documents | Tests expect old tab config (e.g. `details` first tab); code now has `issues` first |
-| returns tabs for program documents | Same — tab ordering changed |
-| returns empty array for sprint documents | Sprint now has tabs, test expects none |
-| returns false for sprint documents | Sprint `hasTabs` changed |
-| validates project tab IDs correctly | Expects `details` as first tab, now `issues` |
-| validates program tab IDs correctly | Same pattern |
-| returns first tab as default for URL without tab | Expects `details`, gets `issues` |
-| resolves dynamic labels with counts | Looks for `sprints` tab that no longer exists by that ID |
-| resolves dynamic labels without counts | Same |
+Playwright's built-in retry (`retries: 1`) identified 3 flaky tests (see above).
+All other 865 tests passed on first attempt.
 
-**Root cause:** Tab configuration in `document-tabs.ts` was refactored (tab order changed, sprint gained tabs, tab IDs renamed) but tests were not updated. **These are stale tests, not bugs.**
-
-**`useSessionTimeout.test.ts` — 1 failure**
-
-| Test | Root Cause |
-|------|-----------|
-| does NOT call onTimeout if dismissed before 0 | Timer fires `onTimeout` even after dismiss. Likely a race in fake timer handling or dismiss logic changed. |
-
-**`DetailsExtension.test.ts` — 3 failures**
-
-| Test | Root Cause |
-|------|-----------|
-| should be configured as a block node with content | Expects `content: 'block+'`, actual is `'detailsSummary detailsContent'` — extension was refactored to use named child nodes |
-| should work in editor context | Schema creation fails due to unresolved `detailsSummary` node type |
-| should allow inserting details via command | Same schema error |
-
-**Root cause:** `DetailsExtension` was refactored to use structured content (`detailsSummary detailsContent`) instead of generic `block+`, but tests still assert old structure.
+**Verdict: No intermittent failures in unit suites. 3 flaky E2E tests — all cache/timing related.**
 
 ---
 
-## Code Coverage (API)
+## Code Coverage
+
+### API — 40.3% Statements
 
 | Directory | Stmts | Branch | Funcs | Lines |
 |-----------|-------|--------|-------|-------|
@@ -142,132 +155,155 @@ pnpm --filter @ship/web test -- --run   # x3
 | src/services/ | 20.36% | 16.33% | 18.18% | 20.87% |
 | src/utils/ | 71.31% | 64.64% | 68.96% | 73.21% |
 
-**Web coverage:** Not measured — `@vitest/coverage-v8` not configured for web package.
+### Web — 19.5% Statements
+
+| Directory | Stmts | Branch | Funcs | Lines |
+|-----------|-------|--------|-------|-------|
+| **All files** | **19.46%** | **14.65%** | **18.5%** | **19.78%** |
+| components/ | 28.31% | 22.03% | 22.64% | 31.08% |
+| components/editor/ | 4.09% | 1.77% | 8.62% | 4.29% |
+| components/icons/uswds/ | 48.27% | 18.75% | 40% | 53.84% |
+| components/ui/ | 94.73% | 57.14% | 100% | 100% |
+| contexts/ | 43.75% | 44.44% | 33.33% | 47.72% |
+| hooks/ | 49.7% | 32.95% | 72% | 47.79% |
+| lib/ | 15.31% | 15.49% | 8.33% | 14.5% |
 
 ---
 
-## Coverage Gap Analysis
+## Critical User Flow Mapping
 
-### API Routes Without Unit Tests
+Mapped critical user flows (from assignment: document CRUD, real-time sync, auth,
+sprint management) against existing test coverage.
 
-| Route File | Notes |
-|------------|-------|
-| accountability.ts | No direct test (tested via E2E) |
-| activity.ts | Has test (activity.test.ts) |
-| admin-credentials.ts | No test |
-| admin.ts | No test |
-| ai.ts | No test |
-| associations.ts | Regression test exists, no full test |
-| caia-auth.ts | No test |
-| claude.ts | No test |
-| comments.ts | No test |
-| dashboard.ts | No test |
-| feedback.ts | No test |
-| invites.ts | No test |
-| programs.ts | No test |
-| setup.ts | No test |
-| team.ts | No test |
-| weekly-plans.ts | No test |
+### Document CRUD
 
-**16 of 28 route files have no direct unit tests** (57% untested routes).
+| Flow | Unit Tests | E2E Tests | Coverage |
+|------|-----------|-----------|----------|
+| Create document | `documents.test.ts` | `documents.spec.ts`, `debug-create.spec.ts` | **Good** |
+| Read/list documents | `documents.test.ts`, `documents-visibility.test.ts` | `documents.spec.ts`, `docs-mode.spec.ts` | **Good** |
+| Update document content | `api-content-preservation.test.ts` | `document-workflows.spec.ts` | **Good** |
+| Delete document | — | `documents.spec.ts` | **E2E only** |
+| Document properties | — | `wiki-document-properties.spec.ts` | **E2E only** |
+| Document associations | `associations-regression.test.ts` | `backlinks.spec.ts` | **Partial** |
 
-### API Services Without Unit Tests
+### Real-time Sync / Collaboration
 
-| Service File | Notes |
-|------------|-------|
-| ai-analysis.ts | No test |
-| audit.ts | No test |
-| caia.ts | No test |
-| invite-acceptance.ts | No test |
-| oauth-state.ts | No test |
-| secrets-manager.ts | No test |
+| Flow | Unit Tests | E2E Tests | Coverage |
+|------|-----------|-----------|----------|
+| Yjs state persistence | `collaboration.test.ts` | — | **Unit only, 8.5% coverage** |
+| WebSocket sync protocol | — | — | **Zero coverage** |
+| Conflict resolution (CRDT) | — | — | **Zero coverage** |
+| Content preservation on API save | `api-content-preservation.test.ts` | — | **Unit only** |
 
-**6 of 7 service files have no unit tests** (only `accountability.ts` is tested).
+### Authentication
 
-### Collaboration Module
+| Flow | Unit Tests | E2E Tests | Coverage |
+|------|-----------|-----------|----------|
+| Login/logout | `auth.test.ts` (routes + middleware) | `auth.spec.ts`, `security.spec.ts` | **Good** |
+| Session timeout | `useSessionTimeout.test.ts` (1 failing) | `session-timeout.spec.ts` | **Good** (but 1 unit bug) |
+| Workspace auth/isolation | `workspaces.test.ts` | `workspaces.spec.ts`, `authorization.spec.ts` | **Good** |
+| API token auth | `api-tokens.test.ts` | — | **Unit only** |
 
-Coverage is **8.53% statements** — the main WebSocket collaboration server and Yjs persistence layer are almost entirely untested at the unit level. The existing tests (`collaboration.test.ts`, `api-content-preservation.test.ts`) cover API-facing behavior but not the sync protocol internals.
+### Sprint/Week Management
 
----
+| Flow | Unit Tests | E2E Tests | Coverage |
+|------|-----------|-----------|----------|
+| Week CRUD | `weeks.test.ts` (41 tests) | `weeks.spec.ts`, `project-weeks.spec.ts` | **Good** |
+| Sprint reviews | `sprint-reviews.test.ts` | — | **Unit only** |
+| Weekly accountability | `accountability.test.ts` | `weekly-accountability.spec.ts`, `accountability-*.spec.ts` | **Good** |
+| Sprint planning/timeline | — | `program-mode-week-ux.spec.ts` (66 tests) | **E2E only, thorough** |
 
-## Flaky Detection (3x Runs)
+### Issues
 
-### API Suite
+| Flow | Unit Tests | E2E Tests | Coverage |
+|------|-----------|-----------|----------|
+| Issue CRUD | `issues.test.ts` | `issues.spec.ts` | **Good** |
+| Issue history | `issues-history.test.ts` | — | **Unit only** |
+| Bulk operations | — | `issues-bulk-operations.spec.ts`, `bulk-selection.spec.ts` | **E2E only** |
+| Issue display IDs | — | `issue-display-id.spec.ts` | **E2E only** |
 
-| Run | Files | Tests | Passed | Failed | Runtime |
-|-----|-------|-------|--------|--------|---------|
-| 1 | 28 | 451 | 451 | 0 | 11.64s |
-| 2 | 28 | 451 | 451 | 0 | 11.44s |
-| 3 | 28 | 451 | 451 | 0 | 11.58s |
+### Flows With Zero Test Coverage
 
-**Result: No flaky tests detected.** All 451 tests passed consistently across 3 runs.
-
-### Web Suite
-
-| Run | Files | Tests | Passed | Failed | Runtime |
-|-----|-------|-------|--------|--------|---------|
-| 1 | 16 | 151 | 138 | 13 | 1.06s |
-| 2 | 16 | 151 | 138 | 13 | 1.06s |
-| 3 | 16 | 151 | 138 | 13 | 1.06s |
-
-**Result: No flaky tests detected.** The same 13 tests fail deterministically every run — they are stale, not flaky.
+| Flow | Risk |
+|------|------|
+| **WebSocket sync protocol** | High — core feature, no tests at all |
+| **CRDT conflict resolution** | High — data integrity risk |
+| **Comments CRUD** | Medium — `comments.ts` route has no unit or E2E tests |
+| **AI analysis** | Low — `ai.ts`, `ai-analysis.ts` untested |
+| **Admin operations** | Low — `admin.ts`, `admin-credentials.ts` untested |
+| **Feedback** | Low — `feedback.ts` untested |
+| **CAIA auth** | Low — `caia-auth.ts` untested |
 
 ---
 
 ## Severity Rankings
 
-| Finding | Severity | Impact |
-|---------|----------|--------|
-| 13 deterministically failing web tests | **P1 — High** | Broken CI signal; masks real regressions |
-| 40% API line coverage | **P2 — Medium** | Low confidence in untested code paths |
-| 57% of API routes untested | **P2 — Medium** | Core business logic has no safety net |
-| 86% of services untested | **P2 — Medium** | Services contain critical business logic |
-| 8.5% collaboration coverage | **P2 — Medium** | Real-time collab is a core feature |
-| No web coverage measurement | **P3 — Low** | Can't track web-side regression risk |
-| `@vitest/coverage-v8` not in deps | **P3 — Low** | Coverage requires manual install |
+| # | Finding | Severity | Impact |
+|---|---------|----------|--------|
+| 1 | 13 deterministically failing web unit tests | **P1 — High** | Broken CI signal; masks real regressions |
+| 2 | WebSocket sync + CRDT conflict resolution: zero coverage | **P1 — High** | Core collaboration feature has no safety net |
+| 3 | 3 flaky E2E tests (cache invalidation) | **P2 — Medium** | Unreliable CI, developer friction |
+| 4 | 1 E2E failure (inline-comments highlight) | **P2 — Medium** | Real bug in comment-cancel flow |
+| 5 | 40% API / 20% web line coverage | **P2 — Medium** | Large untested surface area |
+| 6 | 57% of API routes have no unit tests | **P2 — Medium** | Business logic relies solely on E2E |
+| 7 | 86% of API services untested | **P2 — Medium** | Services contain critical logic |
+| 8 | Comments route: zero coverage (unit + E2E) | **P2 — Medium** | User-facing feature completely untested |
+| 9 | `@vitest/coverage-v8` not in devDependencies | **P3 — Low** | Coverage requires manual install |
 
 ---
 
 ## Recommendations
 
-1. **Fix the 13 failing web tests** — Update `document-tabs.test.ts` (9 tests) to match current tab config, fix `DetailsExtension.test.ts` (3 tests) for new content model, investigate `useSessionTimeout.test.ts` dismiss race.
+1. **Fix the 13 failing web unit tests** — Update `document-tabs.test.ts` (9) for
+   current tab config, `DetailsExtension.test.ts` (3) for new content model,
+   investigate `useSessionTimeout.test.ts` dismiss behavior.
 
-2. **Add unit tests for critical untested routes** — Priority: `comments.ts`, `associations.ts`, `programs.ts`, `invites.ts`, `dashboard.ts` (user-facing, high-traffic).
+2. **Add collaboration protocol tests** — The WebSocket sync and CRDT conflict
+   resolution paths are the highest-risk zero-coverage area. Even basic
+   "two clients edit simultaneously" tests would catch regressions.
 
-3. **Add coverage config to web vitest** — Mirror the API config to get visibility into frontend test coverage.
+3. **Fix the 3 flaky E2E tests** — All are cache invalidation timing. Add explicit
+   cache-busting or wait-for-data patterns in the stale-data specs.
 
-4. **Improve collaboration test coverage** — The 8.5% coverage on the most complex subsystem is a risk. Focus on Yjs persistence and conflict resolution paths.
+4. **Add unit tests for `comments.ts`** — Only route with zero coverage at both
+   unit and E2E level despite being user-facing.
 
-5. **Add `@vitest/coverage-v8` to API devDependencies** — Currently not in `package.json`; coverage requires manual install.
+5. **Add `@vitest/coverage-v8` to both packages' devDependencies** and configure
+   web coverage (done in this branch — see `web/vitest.config.ts`).
 
 ---
 
 ## Mermaid: Test Health Overview
 
 ```mermaid
-pie title Test Results Across All Unit Suites
-    "Passed (589)" : 589
-    "Failed (13)" : 13
+pie title Test Results Across All Suites (1,471 total)
+    "Passed (1,454)" : 1454
+    "Failed (14)" : 14
+    "Flaky (3)" : 3
 ```
 
 ```mermaid
-pie title API Code Coverage by Category
-    "Covered Statements (40%)" : 40
-    "Uncovered Statements (60%)" : 60
+pie title Code Coverage — API (Statements)
+    "Covered (40%)" : 40
+    "Uncovered (60%)" : 60
 ```
 
 ```mermaid
-graph LR
-    subgraph "API Routes (28 files)"
-        A[12 Tested] --> |"43%"| B[Green]
-        C[16 Untested] --> |"57%"| D[Red]
+pie title Code Coverage — Web (Statements)
+    "Covered (20%)" : 20
+    "Uncovered (80%)" : 80
+```
+
+```mermaid
+graph TD
+    subgraph "Critical Flow Coverage"
+        A[Document CRUD] -->|"Unit + E2E"| G[✅ Good]
+        B[Auth/Sessions] -->|"Unit + E2E"| G
+        C[Week/Sprint Mgmt] -->|"Unit + E2E"| G
+        D[Issues] -->|"Unit + E2E"| G
+        E[WebSocket Sync] -->|"Zero tests"| H[❌ Gap]
+        F[Comments CRUD] -->|"Zero tests"| H
     end
-    subgraph "API Services (7 files)"
-        E[1 Tested] --> |"14%"| F[Green]
-        G[6 Untested] --> |"86%"| H[Red]
-    end
-    style B fill:#4CAF50
-    style D fill:#f44336
-    style F fill:#4CAF50
-    style H fill:#f44336
+    style G fill:#4CAF50,color:#fff
+    style H fill:#f44336,color:#fff
 ```
