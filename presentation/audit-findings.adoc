@@ -1,0 +1,128 @@
+= Ship: Audit Findings
+:revealjs_theme: white
+:revealjs_slideNumber: true
+:revealjs_hash: true
+:revealjs_width: 1280
+:revealjs_height: 720
+:revealjs_transition: slide
+
+== What We Audited
+
+Seven categories, one app, three days.
+
+[%step]
+* Type Safety
+* Bundle Size
+* API Response Time
+* Database Query Efficiency
+* Test Coverage & Quality
+* Runtime Error Handling
+* Accessibility Compliance
+
+[NOTE.speaker]
+--
+Full findings are in the audit markdown files with methodology, raw data, and reproduction steps. These slides hit the high points — the things we should actually fix.
+--
+
+== 1. Type Safety
+
+522 total violations across the codebase
+
+[%step]
+* *Must fix:* `web/tsconfig.json` missing strict flags — weaker type safety than backend
+* *Must fix:* 27 `as DomainType` casts bypass API contracts — silent breakage if API changes
+* *Should fix:* 54 `as Record/Partial` casts mask missing or renamed fields
+* *Should fix:* 48 `any`-typed callback params in API route handlers
+* *Nice to have:* Typed mock helper to clean up 156 test `as any` casts
+* Zero `@ts-ignore` — good discipline
+
+== 2. Bundle Size
+
+2,323 KB total — 700 KB gzipped
+
+[%step]
+* *Must fix:* No route-level code splitting — all 20+ pages in one 2 MB chunk
+* *Must fix:* emoji-picker-react is 400 KB for an occasional feature — lazy-load it
+* *Should fix:* highlight.js pulls 378 KB for code blocks most users never create
+* *Should fix:* Two tooltip/popover libraries (Popper + Floating UI) — 145 KB overlap
+* *Nice to have:* Add `sideEffects: false` and manual chunk config to Vite build
+
+== 3. API Response Time
+
+Five endpoints benchmarked under load
+
+[%step]
+* *Must fix:* GET /api/issues returns 312 KB (full document content for 304 issues) — P95 is 177 ms, 10x slower than everything else
+* *Must fix:* Drop `content` column from list response — estimated 80%+ reduction
+* *Should fix:* Auth middleware runs 3 DB queries per request before route handler starts
+* *Should fix:* Projects endpoint uses correlated subqueries — 53 ms P95 at c=50
+* *Nice to have:* Add pagination to all list endpoints
+
+== 4. Database Query Efficiency
+
+Read paths are clean — write paths have N+1 patterns
+
+[%step]
+* *Must fix:* Association inserts loop one-at-a-time — 3 INSERTs instead of 1 bulk
+* *Must fix:* Bulk move issues: 3 queries per issue (150 queries to move 50 issues)
+* *Should fix:* Missing compound indexes for common query patterns
+* *Should fix:* Correlated subquery for project status runs per-row
+* *Nice to have:* Expression index on `properties->>'assignee_id'`
+* Positive: parameterized queries everywhere, GIN index, batch reads already in place
+
+== 5. Test Coverage & Quality
+
+1,471 tests — 451 API unit, 151 web unit, 869 E2E
+
+[%step]
+* *Must fix:* 13 deterministically failing web unit tests — broken CI signal
+* *Must fix:* WebSocket sync and CRDT conflict resolution have zero test coverage
+* *Should fix:* 3 flaky E2E tests — all cache invalidation timing
+* *Should fix:* Comments route has zero coverage at both unit and E2E level
+* *Nice to have:* Raise web coverage from 20% toward 40%
+* API unit suite is rock solid — 451 tests, 0 failures, 3 consecutive green runs
+
+== 6. Runtime Error Handling
+
+Zero console errors during normal use — but silent failures lurk
+
+[%step]
+* *Must fix:* Collaboration persistence is fire-and-forget — if DB write fails, edits silently lost
+* *Must fix:* No process-level unhandled rejection handler — one bad promise crashes the server
+* *Should fix:* 6 routes have no error boundary — auth, admin, and public feedback pages
+* *Should fix:* 10 mutations fail silently — user clicks button, nothing happens, no error shown
+* *Nice to have:* Per-tab error boundaries so one broken tab doesn't collapse the editor
+* Network disconnect recovery works — data survives reconnect
+
+== 7. Accessibility
+
+0 critical violations — 45 serious, all color contrast
+
+[%step]
+* *Must fix:* `text-muted/50` on dark backgrounds — ratio 2.26:1, needs 4.5:1 (25 elements)
+* *Must fix:* `text-accent` on dark backgrounds — ratio 2.55:1 (16 elements)
+* *Should fix:* ProseMirror editor area has no visible focus indicator
+* *Should fix:* 5 components missing ARIA labels (emoji picker, editor title, search inputs)
+* *Nice to have:* Near-miss contrast on elevated surfaces (ratio 3.65–4.38:1, 4 elements)
+* Strong foundation: landmarks, skip-to-content, tree roles, tab roles all correct
+
+== Stretch: Extra Audits
+
+If time permits, five more areas to investigate
+
+[%step]
+* E2E Locator Brittleness Audit
+* Collab Server Memory Profiling
+* SQL Injection Audit
+* Dependency Vulnerability Scan
+* Cyclomatic Complexity Analysis
+
+== Summary
+
+[%step]
+* Detailed findings are in the audit markdown — methodology, raw data, repro steps
+* Two CSS fixes eliminate all 45 accessibility violations
+* Dropping `content` from the issues list response is the single highest-ROI backend change
+* Route-level code splitting is the single highest-ROI frontend change
+* The foundations are solid — parameterized SQL, CRDT sync, good landmarks, stable API tests
+* Prioritize the "must fix" items — they're the ones that risk data loss or block scaling
