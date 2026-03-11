@@ -1,0 +1,284 @@
+[
+  {
+    "page": "Login",
+    "url": "http://localhost:5173/login",
+    "violations": [],
+    "passes": 23,
+    "incomplete": 0,
+    "inapplicable": 38,
+    "violationCount": 0,
+    "criticalCount": 0,
+    "seriousCount": 0,
+    "moderateCount": 0,
+    "minorCount": 0
+  },
+  {
+    "page": "My Week",
+    "url": "http://localhost:5173/my-week",
+    "violations": [
+      {
+        "id": "color-contrast",
+        "impact": "serious",
+        "description": "Ensure the contrast between foreground and background colors meets WCAG 2 AA minimum contrast ratio thresholds",
+        "helpUrl": "https://dequeuniversity.com/rules/axe/4.11/color-contrast?application=playwright",
+        "nodes": 15,
+        "tags": [
+          "cat.color",
+          "wcag2aa",
+          "wcag143",
+          "TTv5",
+          "TT13.c",
+          "EN-301-549",
+          "EN-9.1.4.3",
+          "ACT",
+          "RGAAv4",
+          "RGAA-3.2.1"
+        ]
+      }
+    ],
+    "passes": 20,
+    "incomplete": 2,
+    "inapplicable": 41,
+    "violationCount": 1,
+    "criticalCount": 0,
+    "seriousCount": 15,
+    "moderateCount": 0,
+    "minorCount": 0
+  },
+  {
+    "page": "Dashboard",
+    "url": "http://localhost:5173/dashboard",
+    "violations": [
+      {
+        "id": "color-contrast",
+        "impact": "serious",
+        "description": "Ensure the contrast between foreground and background colors meets WCAG 2 AA minimum contrast ratio thresholds",
+        "helpUrl": "https://dequeuniversity.com/rules/axe/4.11/color-contrast?application=playwright",
+        "nodes": 14,
+        "tags": [
+          "cat.color",
+          "wcag2aa",
+          "wcag143",
+          "TTv5",
+          "TT13.c",
+          "EN-301-549",
+          "EN-9.1.4.3",
+          "ACT",
+          "RGAAv4",
+          "RGAA-3.2.1"
+        ]
+      }
+    ],
+    "passes": 20,
+    "incomplete": 2,
+    "inapplicable": 41,
+    "violationCount": 1,
+    "criticalCount": 0,
+    "seriousCount": 14,
+    "moderateCount": 0,
+    "minorCount": 0
+  },
+  {
+    "page": "Issues List",
+    "url": "http://localhost:5173/issues",
+    "violations": [],
+    "passes": 21,
+    "incomplete": 2,
+    "inapplicable": 40,
+    "violationCount": 0,
+    "criticalCount": 0,
+    "seriousCount": 0,
+    "moderateCount": 0,
+    "minorCount": 0
+  },
+  {
+    "page": "Documents List",
+    "url": "http://localhost:5173/docs",
+    "violations": [],
+    "passes": 23,
+    "incomplete": 2,
+    "inapplicable": 38,
+    "violationCount": 0,
+    "criticalCount": 0,
+    "seriousCount": 0,
+    "moderateCount": 0,
+    "minorCount": 0
+  },
+  {
+    "page": "Projects List",
+    "url": "http://localhost:5173/projects",
+    "violations": [
+      {
+        "id": "color-contrast",
+        "impact": "serious",
+        "description": "Ensure the contrast between foreground and background colors meets WCAG 2 AA minimum contrast ratio thresholds",
+        "helpUrl": "https://dequeuniversity.com/rules/axe/4.11/color-contrast?application=playwright",
+        "nodes": 12,
+        "tags": [
+          "cat.color",
+          "wcag2aa",
+          "wcag143",
+          "TTv5",
+          "TT13.c",
+          "EN-301-549",
+          "EN-9.1.4.3",
+          "ACT",
+          "RGAAv4",
+          "RGAA-3.2.1"
+        ]
+      }
+    ],
+    "passes": 21,
+    "incomplete": 2,
+    "inapplicable": 40,
+    "violationCount": 1,
+    "criticalCount": 0,
+    "seriousCount": 12,
+    "moderateCount": 0,
+    "minorCount": 0
+  },
+  {
+    "page": "Programs List",
+    "url": "http://localhost:5173/programs",
+    "violations": [],
+    "passes": 20,
+    "incomplete": 2,
+    "inapplicable": 41,
+    "violationCount": 0,
+    "criticalCount": 0,
+    "seriousCount": 0,
+    "moderateCount": 0,
+    "minorCount": 0
+  },
+  {
+    "page": "Team Allocation",
+    "url": "http://localhost:5173/team/allocation",
+    "violations": [
+      {
+        "id": "color-contrast",
+        "impact": "serious",
+        "description": "Ensure the contrast between foreground and background colors meets WCAG 2 AA minimum contrast ratio thresholds",
+        "helpUrl": "https://dequeuniversity.com/rules/axe/4.11/color-contrast?application=playwright",
+        "nodes": 1,
+        "tags": [
+          "cat.color",
+          "wcag2aa",
+          "wcag143",
+          "TTv5",
+          "TT13.c",
+          "EN-301-549",
+          "EN-9.1.4.3",
+          "ACT",
+          "RGAAv4",
+          "RGAA-3.2.1"
+        ]
+      }
+    ],
+    "passes": 20,
+    "incomplete": 2,
+    "inapplicable": 41,
+    "violationCount": 1,
+    "criticalCount": 0,
+    "seriousCount": 1,
+    "moderateCount": 0,
+    "minorCount": 0
+  },
+  {
+    "page": "Team Directory",
+    "url": "http://localhost:5173/team/directory",
+    "violations": [],
+    "passes": 20,
+    "incomplete": 2,
+    "inapplicable": 41,
+    "violationCount": 0,
+    "criticalCount": 0,
+    "seriousCount": 0,
+    "moderateCount": 0,
+    "minorCount": 0
+  },
+  {
+    "page": "Settings",
+    "url": "http://localhost:5173/settings",
+    "violations": [],
+    "passes": 20,
+    "incomplete": 2,
+    "inapplicable": 41,
+    "violationCount": 0,
+    "criticalCount": 0,
+    "seriousCount": 0,
+    "moderateCount": 0,
+    "minorCount": 0
+  },
+  {
+    "page": "Issue Editor",
+    "url": "http://localhost:5173/documents/2c592f78-1247-4422-8d23-5817de08bb2c",
+    "violations": [
+      {
+        "id": "color-contrast",
+        "impact": "serious",
+        "description": "Ensure the contrast between foreground and background colors meets WCAG 2 AA minimum contrast ratio thresholds",
+        "helpUrl": "https://dequeuniversity.com/rules/axe/4.11/color-contrast?application=playwright",
+        "nodes": 3,
+        "tags": [
+          "cat.color",
+          "wcag2aa",
+          "wcag143",
+          "TTv5",
+          "TT13.c",
+          "EN-301-549",
+          "EN-9.1.4.3",
+          "ACT",
+          "RGAAv4",
+          "RGAA-3.2.1"
+        ]
+      }
+    ],
+    "passes": 26,
+    "incomplete": 2,
+    "inapplicable": 35,
+    "violationCount": 1,
+    "criticalCount": 0,
+    "seriousCount": 3,
+    "moderateCount": 0,
+    "minorCount": 0
+  },
+  {
+    "page": "Wiki Editor",
+    "url": "http://localhost:5173/documents/e0abe2a6-8d79-48fc-9204-061faea690a3",
+    "violations": [],
+    "passes": 23,
+    "incomplete": 2,
+    "inapplicable": 38,
+    "violationCount": 0,
+    "criticalCount": 0,
+    "seriousCount": 0,
+    "moderateCount": 0,
+    "minorCount": 0
+  },
+  {
+    "page": "Project Editor",
+    "url": "http://localhost:5173/documents/01d48a36-6df9-4ad0-8f4b-27d9c7739214",
+    "violations": [],
+    "passes": 23,
+    "incomplete": 2,
+    "inapplicable": 38,
+    "violationCount": 0,
+    "criticalCount": 0,
+    "seriousCount": 0,
+    "moderateCount": 0,
+    "minorCount": 0
+  },
+  {
+    "page": "Sprint Editor",
+    "url": "http://localhost:5173/documents/0becfcf5-7ff5-4778-9e74-d827b15139b7",
+    "violations": [],
+    "passes": 23,
+    "incomplete": 2,
+    "inapplicable": 38,
+    "violationCount": 0,
+    "criticalCount": 0,
+    "seriousCount": 0,
+    "moderateCount": 0,
+    "minorCount": 0
+  }
+]

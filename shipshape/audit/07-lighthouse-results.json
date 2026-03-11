@@ -1,0 +1,72 @@
+[
+  {
+    "label": "Login",
+    "url": "http://localhost:5174/login",
+    "finalUrl": "http://localhost:5174/login",
+    "score": 98,
+    "failingAudits": [
+      {
+        "id": "landmark-one-main",
+        "title": "Document does not have a main landmark.",
+        "score": 0,
+        "items": 1
+      }
+    ]
+  },
+  {
+    "label": "My Week",
+    "url": "http://localhost:5174/week",
+    "finalUrl": "http://localhost:5174/week",
+    "score": 97,
+    "failingAudits": [
+      {
+        "id": "landmark-one-main",
+        "title": "Document does not have a main landmark.",
+        "score": 0,
+        "items": 1
+      }
+    ]
+  },
+  {
+    "label": "Dashboard",
+    "url": "http://localhost:5174/dashboard",
+    "finalUrl": "http://localhost:5174/dashboard",
+    "score": 96,
+    "failingAudits": [
+      {
+        "id": "color-contrast",
+        "title": "Background and foreground colors do not have a sufficient contrast ratio.",
+        "score": 0,
+        "items": 9
+      }
+    ]
+  },
+  {
+    "label": "Issues List",
+    "url": "http://localhost:5174/issues",
+    "finalUrl": "http://localhost:5174/issues",
+    "score": 100,
+    "failingAudits": []
+  },
+  {
+    "label": "Projects List",
+    "url": "http://localhost:5174/projects",
+    "finalUrl": "http://localhost:5174/projects",
+    "score": 96,
+    "failingAudits": [
+      {
+        "id": "color-contrast",
+        "title": "Background and foreground colors do not have a sufficient contrast ratio.",
+        "score": 0,
+        "items": 5
+      }
+    ]
+  },
+  {
+    "label": "Documents List",
+    "url": "http://localhost:5174/docs",
+    "finalUrl": "http://localhost:5174/docs",
+    "score": 100,
+    "failingAudits": []
+  }
+]
