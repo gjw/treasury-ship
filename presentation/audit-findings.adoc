@@ -1,4 +1,5 @@
 = Ship: Audit Findings
+:revealjsdir: https://cdn.jsdelivr.net/npm/reveal.js@5.2.1
 :revealjs_theme: white
 :revealjs_slideNumber: true
 :revealjs_hash: true
