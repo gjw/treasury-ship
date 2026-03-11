@@ -110,6 +110,10 @@ vendor/
 .pr-checklist.json
 .dev-ports
 .claude/settings.local.json
+.claude/tracking/
 
 # Vite PWA dev artifacts
 web/dev-dist/
+
+# bv (beads viewer) local config and caches
+.bv/
