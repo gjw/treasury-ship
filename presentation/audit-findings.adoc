@@ -9,7 +9,7 @@
 
 == What We Audited
 
-Seven categories, one app, three days.
+Seven categories, one app, 34 hours.
 
 [%step]
 * Type Safety
