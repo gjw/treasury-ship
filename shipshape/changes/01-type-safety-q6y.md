@@ -15,6 +15,8 @@ The PDF assignment (Category 1: Type Safety) asks to **eliminate 25% of type saf
 2. The fixes are real runtime safety improvements (e.g., guarding against `undefined` from array indexing), not cosmetic.
 3. `noFallthroughCasesInSwitch` is particularly valuable for the unified document model's discriminated unions.
 
+**Known tradeoff with `noImplicitReturns`:** This flag creates friction with React's `useEffect` pattern. When an effect conditionally returns a cleanup function, TS requires all code paths to return — so the "no cleanup needed" branch needs an explicit `return undefined`. This is ceremony, not safety: React treats `undefined` identically to not returning. The ~5 `return undefined` additions in this branch are the weakest fixes in F1. The flag is still worth having for non-React code (catching genuinely forgotten returns), but this React friction should be noted.
+
 **F2 (cast elimination) directly targets the 25% goal.** It removes 27 `as DomainType` casts and 10 `!` assertions, replacing them with proper type narrowing and runtime guards.
 
 **For the final report:** Count F2's reductions toward the 25% target. Frame F1 as a separate strict-mode hardening improvement with its own before/after (0 → 3 additional strict flags enabled; 102 latent type errors surfaced and fixed with runtime guards).
