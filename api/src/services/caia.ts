@@ -132,11 +132,14 @@ async function discoverIssuer(): Promise<client.Configuration> {
     console.log(`[CAIA] Supported token auth methods: ${JSON.stringify(metadata.token_endpoint_auth_methods_supported)}`);
     return config;
   } catch (err) {
-    const error = err as Error & { cause?: unknown; code?: string };
     console.error(`[CAIA] Discovery failed during auth flow:`);
-    console.error(`[CAIA]   Error: ${error.message}`);
-    if (error.cause) {
-      console.error(`[CAIA]   Cause:`, error.cause);
+    if (err instanceof Error) {
+      console.error(`[CAIA]   Error: ${err.message}`);
+      if (err.cause) {
+        console.error(`[CAIA]   Cause:`, err.cause);
+      }
+    } else {
+      console.error(`[CAIA]   Error:`, err);
     }
     throw err;
   }
@@ -246,30 +249,26 @@ export async function handleCallback(
     });
     console.log('[CAIA] Token exchange successful');
   } catch (err) {
-    const error = err as Error & {
-      cause?: unknown;
-      code?: string;
-      status?: number;
-      response?: Response;
-      error?: string;
-      error_description?: string;
-    };
     console.error('[CAIA] Token exchange FAILED:');
-    console.error(`[CAIA]   Error name: ${error.name}`);
-    console.error(`[CAIA]   Error message: ${error.message}`);
-    if (error.status) {
-      console.error(`[CAIA]   HTTP Status: ${error.status}`);
+    if (err instanceof Error) {
+      console.error(`[CAIA]   Error name: ${err.name}`);
+      console.error(`[CAIA]   Error message: ${err.message}`);
+      if ('status' in err && typeof err.status === 'number') {
+        console.error(`[CAIA]   HTTP Status: ${err.status}`);
+      }
+      if ('error' in err && typeof err.error === 'string') {
+        console.error(`[CAIA]   OAuth Error: ${err.error}`);
+      }
+      if ('error_description' in err && typeof err.error_description === 'string') {
+        console.error(`[CAIA]   OAuth Error Description: ${err.error_description}`);
+      }
+      if (err.cause) {
+        console.error('[CAIA]   Error cause:', err.cause);
+      }
+      console.error('[CAIA]   Full error object:', JSON.stringify(err, Object.getOwnPropertyNames(err), 2));
+    } else {
+      console.error('[CAIA]   Error:', err);
     }
-    if (error.error) {
-      console.error(`[CAIA]   OAuth Error: ${error.error}`);
-    }
-    if (error.error_description) {
-      console.error(`[CAIA]   OAuth Error Description: ${error.error_description}`);
-    }
-    if (error.cause) {
-      console.error('[CAIA]   Error cause:', error.cause);
-    }
-    console.error('[CAIA]   Full error object:', JSON.stringify(error, Object.getOwnPropertyNames(error), 2));
     throw err;
   }
 
@@ -363,17 +362,18 @@ export async function validateIssuerDiscovery(
       issuer,
     };
   } catch (err) {
-    const error = err as Error & { cause?: unknown; code?: string };
     console.error(`[CAIA] Discovery FAILED for ${issuerUrl}:`);
-    console.error(`[CAIA]   Error message: ${error.message}`);
-    console.error(`[CAIA]   Error name: ${error.name}`);
-    if (error.code) {
-      console.error(`[CAIA]   Error code: ${error.code}`);
+    if (err instanceof Error) {
+      console.error(`[CAIA]   Error message: ${err.message}`);
+      console.error(`[CAIA]   Error name: ${err.name}`);
+      if ('code' in err && typeof err.code === 'string') {
+        console.error(`[CAIA]   Error code: ${err.code}`);
+      }
+      if (err.cause) {
+        console.error(`[CAIA]   Error cause:`, err.cause);
+      }
     }
-    if (error.cause) {
-      console.error(`[CAIA]   Error cause:`, error.cause);
-    }
-    console.error(`[CAIA]   Full error:`, error);
+    console.error(`[CAIA]   Full error:`, err);
     throw err;
   }
 }

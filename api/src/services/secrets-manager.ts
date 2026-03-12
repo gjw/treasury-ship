@@ -172,8 +172,7 @@ async function ensureSecretExists(secretName: string): Promise<void> {
     console.log(`Created empty secret: ${secretName}`);
   } catch (err) {
     // Ignore if secret already exists (race condition)
-    const awsErr = err as { name?: string };
-    if (awsErr.name === 'ResourceExistsException') {
+    if (err instanceof Error && err.name === 'ResourceExistsException') {
       return;
     }
     console.error('Failed to create CAIA credentials secret:', err);

@@ -1,5 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { apiGet, apiPost, apiPatch, apiDelete } from '@/lib/api';
+import { ApiError } from '@/lib/apiError';
 import { computeICEScore } from '@ship/shared';
 
 // Inferred project status based on sprint relationships
@@ -92,9 +93,7 @@ export const projectKeys = {
 async function fetchProjects(): Promise<Project[]> {
   const res = await apiGet('/api/projects');
   if (!res.ok) {
-    const error = new Error('Failed to fetch projects') as Error & { status: number };
-    error.status = res.status;
-    throw error;
+    throw new ApiError('Failed to fetch projects', res.status);
   }
   return res.json();
 }
@@ -118,9 +117,7 @@ interface CreateProjectData {
 async function createProjectApi(data: CreateProjectData): Promise<Project> {
   const res = await apiPost('/api/projects', data);
   if (!res.ok) {
-    const error = new Error('Failed to create project') as Error & { status: number };
-    error.status = res.status;
-    throw error;
+    throw new ApiError('Failed to create project', res.status);
   }
   return res.json();
 }
@@ -129,9 +126,7 @@ async function createProjectApi(data: CreateProjectData): Promise<Project> {
 async function updateProjectApi(id: string, updates: Partial<Project>): Promise<Project> {
   const res = await apiPatch(`/api/projects/${id}`, updates);
   if (!res.ok) {
-    const error = new Error('Failed to update project') as Error & { status: number };
-    error.status = res.status;
-    throw error;
+    throw new ApiError('Failed to update project', res.status);
   }
   return res.json();
 }
@@ -140,9 +135,7 @@ async function updateProjectApi(id: string, updates: Partial<Project>): Promise<
 async function deleteProjectApi(id: string): Promise<void> {
   const res = await apiDelete(`/api/projects/${id}`);
   if (!res.ok) {
-    const error = new Error('Failed to delete project') as Error & { status: number };
-    error.status = res.status;
-    throw error;
+    throw new ApiError('Failed to delete project', res.status);
   }
 }
 
@@ -355,9 +348,7 @@ export function useProjects() {
 async function fetchProjectIssues(projectId: string): Promise<ProjectIssue[]> {
   const res = await apiGet(`/api/projects/${projectId}/issues`);
   if (!res.ok) {
-    const error = new Error('Failed to fetch project issues') as Error & { status: number };
-    error.status = res.status;
-    throw error;
+    throw new ApiError('Failed to fetch project issues', res.status);
   }
   return res.json();
 }
@@ -376,9 +367,7 @@ export function useProjectIssuesQuery(projectId: string | undefined) {
 async function fetchProjectWeeks(projectId: string): Promise<ProjectWeek[]> {
   const res = await apiGet(`/api/projects/${projectId}/weeks`);
   if (!res.ok) {
-    const error = new Error('Failed to fetch project weeks') as Error & { status: number };
-    error.status = res.status;
-    throw error;
+    throw new ApiError('Failed to fetch project weeks', res.status);
   }
   return res.json();
 }

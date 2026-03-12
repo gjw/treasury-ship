@@ -1,5 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { apiGet, apiPost, apiPatch } from '@/lib/api';
+import { ApiError } from '@/lib/apiError';
 import type { CascadeWarning, IncompleteChild, BelongsTo, BelongsToType } from '@ship/shared';
 
 // Custom error type for cascade warning (409 response)
@@ -130,9 +131,7 @@ async function fetchIssues(filters?: IssueFilters): Promise<Issue[]> {
 
   const res = await apiGet(url);
   if (!res.ok) {
-    const error = new Error('Failed to fetch issues') as Error & { status: number };
-    error.status = res.status;
-    throw error;
+    throw new ApiError('Failed to fetch issues', res.status);
   }
   const data: ApiIssueResponse[] = await res.json();
   let issues = data.map(transformIssue);
@@ -162,9 +161,7 @@ async function createIssueApi(data: CreateIssueData): Promise<Issue> {
 
   const res = await apiPost('/api/issues', apiData);
   if (!res.ok) {
-    const error = new Error('Failed to create issue') as Error & { status: number };
-    error.status = res.status;
-    throw error;
+    throw new ApiError('Failed to create issue', res.status);
   }
   const apiIssue = await res.json();
   return transformIssue(apiIssue);
@@ -182,9 +179,7 @@ async function updateIssueApi(id: string, updates: Partial<Issue>): Promise<Issu
         throw new CascadeWarningError(body as CascadeWarning);
       }
     }
-    const error = new Error('Failed to update issue') as Error & { status: number };
-    error.status = res.status;
-    throw error;
+    throw new ApiError('Failed to update issue', res.status);
   }
   const apiIssue = await res.json();
   return transformIssue(apiIssue);
@@ -324,9 +319,7 @@ interface BulkUpdateResponse {
 async function bulkUpdateIssuesApi(data: BulkUpdateRequest): Promise<BulkUpdateResponse> {
   const res = await apiPost('/api/issues/bulk', data);
   if (!res.ok) {
-    const error = new Error('Failed to bulk update issues') as Error & { status: number };
-    error.status = res.status;
-    throw error;
+    throw new ApiError('Failed to bulk update issues', res.status);
   }
   return res.json();
 }

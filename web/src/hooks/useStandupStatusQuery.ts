@@ -1,5 +1,6 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { apiGet } from '@/lib/api';
+import { ApiError } from '@/lib/apiError';
 
 export interface StandupStatus {
   due: boolean;
@@ -16,9 +17,7 @@ export const standupStatusKeys = {
 async function fetchStandupStatus(): Promise<StandupStatus> {
   const res = await apiGet('/api/standups/status');
   if (!res.ok) {
-    const error = new Error('Failed to fetch standup status') as Error & { status: number };
-    error.status = res.status;
-    throw error;
+    throw new ApiError('Failed to fetch standup status', res.status);
   }
   return res.json();
 }
