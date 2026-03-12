@@ -11,6 +11,7 @@ import {
 import { logDocumentChange, getLatestDocumentFieldHistory } from '../utils/document-crud.js';
 import { broadcastToUser } from '../collaboration/index.js';
 import { extractText } from '../utils/document-content.js';
+import type { SqlParam } from '../types/sql.js';
 
 type RouterType = ReturnType<typeof Router>;
 const router: RouterType = Router();
@@ -183,50 +184,50 @@ const updatePlanSchema = z.object({
 
 // Helper to extract sprint from row
 // Dates and status are computed on frontend from sprint_number + workspace.sprint_start_date
-function extractSprintFromRow(row: any) {
-  const props = row.properties || {};
+function extractSprintFromRow(row: Record<string, unknown>) {
+  const props = (row.properties || {}) as Record<string, unknown>;
   return {
-    id: row.id,
-    name: row.title,
-    sprint_number: props.sprint_number || 1,
-    status: props.status || 'planning',  // Default to 'planning' for sprints without status
+    id: row.id as string,
+    name: row.title as string,
+    sprint_number: (props.sprint_number as number) || 1,
+    status: (props.status as string) || 'planning',  // Default to 'planning' for sprints without status
     owner: row.owner_id ? {
-      id: row.owner_id,
-      name: row.owner_name,
-      email: row.owner_email,
+      id: row.owner_id as string,
+      name: row.owner_name as string,
+      email: row.owner_email as string,
     } : null,
-    program_id: row.program_id,
-    program_name: row.program_name,
-    program_prefix: row.program_prefix,
-    program_accountable_id: row.program_accountable_id || null,
-    owner_reports_to: row.owner_reports_to || null,
-    workspace_sprint_start_date: row.workspace_sprint_start_date,
-    issue_count: parseInt(row.issue_count) || 0,
-    completed_count: parseInt(row.completed_count) || 0,
-    started_count: parseInt(row.started_count) || 0,
+    program_id: row.program_id as string,
+    program_name: row.program_name as string,
+    program_prefix: row.program_prefix as string,
+    program_accountable_id: (row.program_accountable_id as string) || null,
+    owner_reports_to: (row.owner_reports_to as string) || null,
+    workspace_sprint_start_date: row.workspace_sprint_start_date as string,
+    issue_count: parseInt(row.issue_count as string) || 0,
+    completed_count: parseInt(row.completed_count as string) || 0,
+    started_count: parseInt(row.started_count as string) || 0,
     has_plan: row.has_plan === true || row.has_plan === 't',
     has_retro: row.has_retro === true || row.has_retro === 't',
     // Retro outcome summary (populated if retro exists)
-    retro_outcome: row.retro_outcome || null,
-    retro_id: row.retro_id || null,
+    retro_outcome: (row.retro_outcome as string) || null,
+    retro_id: (row.retro_id as string) || null,
     // Plan tracking fields - what will we learn/validate?
-    plan: props.plan || null,
-    success_criteria: props.success_criteria || null,
+    plan: (props.plan as string) || null,
+    success_criteria: (props.success_criteria as string[]) || null,
     confidence: typeof props.confidence === 'number' ? props.confidence : null,
     plan_history: props.plan_history || null,
     // Completeness flags
     is_complete: props.is_complete ?? null,
-    missing_fields: props.missing_fields ?? [],
+    missing_fields: (props.missing_fields as string[]) ?? [],
     // Plan snapshot (populated when sprint becomes active)
-    planned_issue_ids: props.planned_issue_ids || null,
-    snapshot_taken_at: props.snapshot_taken_at || null,
+    planned_issue_ids: (props.planned_issue_ids as string[]) || null,
+    snapshot_taken_at: (props.snapshot_taken_at as string) || null,
     // Approval tracking
     plan_approval: props.plan_approval || null,
     review_approval: props.review_approval || null,
     // Performance rating (OPM 5-level scale)
-    review_rating: props.review_rating || null,
+    review_rating: (props.review_rating as string) || null,
     // Accountability (sprints inherit from program, but may have direct assignment)
-    accountable_id: props.accountable_id || null,
+    accountable_id: (props.accountable_id as string) || null,
   };
 }
 
@@ -606,7 +607,7 @@ router.get('/my-week', authMiddleware, async (req: Request, res: Response) => {
     const daysRemaining = isHistorical ? 0 : Math.max(0, Math.ceil((targetSprintEnd.getTime() - today.getTime()) / (1000 * 60 * 60 * 24)) + 1);
 
     // Build dynamic WHERE clause for issue filters
-    const params: any[] = [workspaceId, targetSprintNumber, userId, isAdmin];
+    const params: SqlParam[] = [workspaceId, targetSprintNumber, userId, isAdmin];
     let filterConditions = '';
 
     if (state && typeof state === 'string') {
@@ -664,7 +665,7 @@ router.get('/my-week', authMiddleware, async (req: Request, res: Response) => {
     const groupedData: Record<string, {
       sprint: { id: string; name: string; sprint_number: number };
       program: { id: string; name: string; prefix: string } | null;
-      issues: any[];
+      issues: { state: string; [key: string]: unknown }[];
     }> = {};
 
     for (const row of result.rows) {
@@ -709,9 +710,9 @@ router.get('/my-week', authMiddleware, async (req: Request, res: Response) => {
     // Calculate totals
     const totalIssues = groups.reduce((sum, g) => sum + g.issues.length, 0);
     const completedIssues = groups.reduce((sum, g) =>
-      sum + g.issues.filter((i: any) => i.state === 'done').length, 0);
+      sum + g.issues.filter((i) => i.state === 'done').length, 0);
     const inProgressIssues = groups.reduce((sum, g) =>
-      sum + g.issues.filter((i: any) => i.state === 'in_progress' || i.state === 'in_review').length, 0);
+      sum + g.issues.filter((i) => i.state === 'in_progress' || i.state === 'in_review').length, 0);
 
     res.json({
       groups,
@@ -1050,7 +1051,7 @@ router.patch('/:id', authMiddleware, async (req: Request, res: Response) => {
     const currentProps = existing.rows[0].properties || {};
     const programId = existing.rows[0].program_id;
     const updates: string[] = [];
-    const values: any[] = [];
+    const values: SqlParam[] = [];
     let paramIndex = 1;
 
     const data = parsed.data;
@@ -1790,17 +1791,17 @@ const createStandupSchema = z.object({
 });
 
 // Helper to format standup response
-function formatStandupResponse(row: any) {
+function formatStandupResponse(row: Record<string, unknown>) {
   return {
-    id: row.id,
-    sprint_id: row.parent_id,
-    title: row.title,
+    id: row.id as string,
+    sprint_id: row.parent_id as string,
+    title: row.title as string,
     content: row.content,
-    author_id: row.author_id,
-    author_name: row.author_name,
-    author_email: row.author_email,
-    created_at: row.created_at,
-    updated_at: row.updated_at,
+    author_id: row.author_id as string,
+    author_name: row.author_name as string,
+    author_email: row.author_email as string,
+    created_at: row.created_at as string,
+    updated_at: row.updated_at as string,
   };
 }
 
@@ -2019,7 +2020,19 @@ const sprintReviewSchema = z.object({
 });
 
 // Helper to generate pre-filled sprint review content
-async function generatePrefilledReviewContent(sprintData: any, issues: any[]) {
+interface SprintReviewData {
+  sprint_number: number;
+  program_name?: string;
+  plan?: string | null;
+}
+
+interface SprintIssueRow {
+  properties?: Record<string, unknown>;
+  title: string;
+  ticket_number: number;
+}
+
+async function generatePrefilledReviewContent(sprintData: SprintReviewData, issues: SprintIssueRow[]) {
   // Categorize issues
   const issuesPlanned = issues.filter(i => {
     const props = i.properties || {};
@@ -2044,7 +2057,7 @@ async function generatePrefilledReviewContent(sprintData: any, issues: any[]) {
   });
 
   // Build TipTap content with suggested sections
-  const content: any = {
+  const content: { type: string; content: Record<string, unknown>[] } = {
     type: 'doc',
     content: [
       {
@@ -2426,7 +2439,7 @@ router.patch('/:id/review', authMiddleware, async (req: Request, res: Response) 
 
     // Build update query
     const updates: string[] = [];
-    const values: any[] = [];
+    const values: SqlParam[] = [];
     let paramIndex = 1;
 
     if (content !== undefined) {

@@ -6,7 +6,7 @@
  */
 
 import swaggerUi from 'swagger-ui-express';
-import { Express } from 'express';
+import { Express, Request, Response } from 'express';
 import * as fs from 'fs';
 import * as path from 'path';
 import { fileURLToPath } from 'url';
@@ -36,12 +36,12 @@ export function setupSwagger(app: Express): void {
   }));
 
   // Serve the raw OpenAPI spec
-  app.get('/api/openapi.json', (req, res) => {
+  app.get('/api/openapi.json', (_req: Request, res: Response) => {
     res.setHeader('Content-Type', 'application/json');
     res.send(swaggerSpec);
   });
 
-  app.get('/api/openapi.yaml', (req, res) => {
+  app.get('/api/openapi.yaml', (_req: Request, res: Response) => {
     res.setHeader('Content-Type', 'text/yaml');
     const yaml = jsonToYaml(swaggerSpec);
     res.send(yaml);

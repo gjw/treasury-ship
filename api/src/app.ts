@@ -157,12 +157,12 @@ export function createApp(corsOrigin: string = 'http://localhost:5173'): express
   }));
 
   // CSRF token endpoint (must be before CSRF protection middleware)
-  app.get('/api/csrf-token', (req, res) => {
+  app.get('/api/csrf-token', (req: Request, res: Response) => {
     res.json({ token: generateToken(req) });
   });
 
   // Health check (no CSRF needed)
-  app.get('/health', (_req, res) => {
+  app.get('/health', (_req: Request, res: Response) => {
     res.json({ status: 'ok' });
   });
 

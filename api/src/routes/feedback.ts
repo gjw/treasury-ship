@@ -24,26 +24,26 @@ const rejectFeedbackSchema = z.object({
 });
 
 // Helper to extract feedback from row
-function extractFeedbackFromRow(row: any, programPrefix?: string | null) {
-  const props = row.properties || {};
+function extractFeedbackFromRow(row: Record<string, unknown>, programPrefix?: string | null) {
+  const props = (row.properties || {}) as Record<string, unknown>;
   return {
-    id: row.id,
-    title: row.title,
-    state: props.state || 'triage',
-    priority: props.priority || 'medium',
-    source: props.source || 'external',
-    rejection_reason: props.rejection_reason || null,
-    assignee_id: props.assignee_id || null,
-    ticket_number: row.ticket_number,
-    program_id: row.program_id,
+    id: row.id as string,
+    title: row.title as string,
+    state: (props.state as string) || 'triage',
+    priority: (props.priority as string) || 'medium',
+    source: (props.source as string) || 'external',
+    rejection_reason: (props.rejection_reason as string) || null,
+    assignee_id: (props.assignee_id as string) || null,
+    ticket_number: row.ticket_number as number,
+    program_id: row.program_id as string,
     content: row.content,
-    created_at: row.created_at,
-    updated_at: row.updated_at,
-    created_by: row.created_by,
-    program_name: row.program_name,
-    program_prefix: row.program_prefix || programPrefix,
-    program_color: row.program_color,
-    created_by_name: row.created_by_name,
+    created_at: row.created_at as string,
+    updated_at: row.updated_at as string,
+    created_by: row.created_by as string,
+    program_name: row.program_name as string,
+    program_prefix: (row.program_prefix as string) || programPrefix,
+    program_color: row.program_color as string,
+    created_by_name: row.created_by_name as string,
     display_id: `#${row.ticket_number}`,
   };
 }
