@@ -40,9 +40,19 @@
 
 ## 3. Diff Viewer (ApprovalButton)
 
-- Find a document that has been approved and then edited (approval state = "changed_since_approved")
-- If none exists: open a document → click "Approve" in the properties panel → edit the content → save
-- Look for the amber "View changes since last approval" link
+> **Where to find it:** Approval buttons only appear on **Project** documents,
+> in the Properties sidebar, under an "Approvals" section. Requirements:
+>
+> - You must be the project's accountable person or a workspace admin (`canApprove`)
+> - The project must have a non-empty **plan** (for plan approval) or a **retro** (for retro approval)
+>
+> If you can't easily set this up, the diff viewer test can be skipped — the
+> lazy-loading is verified by the build output (separate `DiffViewer-*.js` chunk).
+
+- Open a Project document that has a plan written and where you have approval rights
+- In the Properties sidebar, find the Approvals section → click "Approve Plan"
+- Edit the plan content, save
+- The approval state should change to "changed_since_approved" with an amber "View changes since last approval" link
 - Click it
 - **Verify:** A modal opens showing the diff with red (deletions) and green (additions) highlighting
 - **Network tab:** On click, you should see a new chunk load (contains diff-match-patch)
