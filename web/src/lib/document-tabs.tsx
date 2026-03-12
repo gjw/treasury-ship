@@ -1,4 +1,5 @@
 import React from 'react';
+import type { BelongsTo } from '@ship/shared';
 
 /**
  * Document Tab Configuration System
@@ -27,6 +28,9 @@ export interface DocumentResponse extends Record<string, unknown> {
   owner_id?: string | null;
   color?: string;
   emoji?: string | null;
+  belongs_to?: BelongsTo[];
+  owner?: { id: string; name: string; email: string } | null;
+  issue_count?: number;
 }
 
 export interface DocumentTabProps {
@@ -208,8 +212,8 @@ export function getTabsForDocument(document: DocumentResponse): DocumentTabConfi
   // Handle sprint-specific dynamic tabs based on status
   if (document_type === 'sprint') {
     // Status is stored in properties.status
-    const properties = document.properties as { status?: string } | undefined;
-    const status = properties?.status || 'planning';
+    const properties = document.properties;
+    const status = (typeof properties?.status === 'string' ? properties.status : null) || 'planning';
 
     if (status === 'planning') {
       return documentTabConfigs['sprint:planning'] || documentTabConfigs.sprint || [];

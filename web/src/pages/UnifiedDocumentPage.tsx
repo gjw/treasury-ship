@@ -135,7 +135,7 @@ export function UnifiedDocumentPage() {
   // Compute tab counts based on document type
   const tabCounts: TabCounts = useMemo(() => {
     if (isProject) {
-      const issueCount = (document as { issue_count?: number })?.issue_count ?? 0;
+      const issueCount = typeof document?.issue_count === 'number' ? document.issue_count : 0;
       return {
         issues: issueCount,
         weeks: projectWeeks.length,
@@ -420,7 +420,7 @@ export function UnifiedDocumentPage() {
         color: (document.color as string) || '#3b82f6',
         emoji: null,
         program_id: programIdFromBelongsTo,
-        owner: document.owner as { id: string; name: string; email: string } | null,
+        owner: document.owner ?? null,
         owner_id: document.owner_id as string | undefined,
         // RACI fields
         accountable_id: document.accountable_id as string | undefined,

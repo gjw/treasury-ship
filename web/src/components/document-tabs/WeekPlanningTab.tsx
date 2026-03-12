@@ -25,12 +25,12 @@ export default function SprintPlanningTab({ documentId, document }: DocumentTabP
   const [isStarting, setIsStarting] = useState(false);
 
   // Get program_id from belongs_to array (sprint's parent program via document_associations)
-  const belongsTo = (document as { belongs_to?: Array<{ id: string; type: string }> }).belongs_to;
+  const belongsTo = document.belongs_to;
   const programId = belongsTo?.find(b => b.type === 'program')?.id;
   // Sprint status is stored in properties.status
-  const properties = document.properties as { status?: string; issue_count?: number } | undefined;
-  const status = properties?.status || 'planning';
-  const issueCount = properties?.issue_count ?? 0;
+  const properties = document.properties;
+  const status = (typeof properties?.status === 'string' ? properties.status : null) || 'planning';
+  const issueCount = typeof properties?.issue_count === 'number' ? properties.issue_count : 0;
 
   // Start sprint mutation
   const startSprintMutation = useMutation({

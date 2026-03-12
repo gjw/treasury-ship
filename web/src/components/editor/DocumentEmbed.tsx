@@ -5,7 +5,8 @@ import { useNavigate } from 'react-router-dom';
 // The React component that renders the document embed
 function DocumentEmbedComponent({ node }: NodeViewProps) {
   const navigate = useNavigate();
-  const { documentId, title } = node.attrs as { documentId: string; title: string };
+  const documentId = String(node.attrs.documentId ?? '');
+  const title = String(node.attrs.title ?? 'Untitled');
 
   const handleClick = () => {
     navigate(`/documents/${documentId}`);

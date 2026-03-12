@@ -311,7 +311,11 @@ export function UnifiedEditor({
       ? {
           id: document.id,
           document_type: document.document_type as 'weekly_plan' | 'weekly_retro',
-          properties: document.properties as { person_id?: string; project_id?: string; week_number?: number } | undefined,
+          properties: document.properties ? {
+            person_id: typeof document.properties.person_id === 'string' ? document.properties.person_id : undefined,
+            project_id: typeof document.properties.project_id === 'string' ? document.properties.project_id : undefined,
+            week_number: typeof document.properties.week_number === 'number' ? document.properties.week_number : undefined,
+          } : undefined,
         }
       : null
   );

@@ -20,7 +20,8 @@ interface WikiSidebarProps {
 
 export function WikiSidebar({ document, teamMembers, currentUserId, onUpdate }: WikiSidebarProps) {
   // Get effective maintainer (explicit or fallback to creator)
-  const maintainerId = (document.properties as { maintainer_id?: string | null })?.maintainer_id || document.created_by;
+  const rawMaintainer = document.properties?.maintainer_id;
+  const maintainerId = (typeof rawMaintainer === 'string' ? rawMaintainer : null) || document.created_by;
 
   // Handle maintainer change
   const handleMaintainerChange = (userId: string | null) => {
