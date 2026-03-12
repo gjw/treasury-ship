@@ -145,7 +145,7 @@ export const EmojiExtension = Node.create({
     // Regex: colon, then word characters/underscores/hyphens, then colon
     const emojiInputRule = new InputRule({
       find: /:([a-zA-Z0-9_+-]+):$/,
-      handler: ({ state, range, match }) => {
+      handler: ({ state, range, match }): null | void => {
         const shortcode = match[1];
         if (!shortcode) {
           return null;
