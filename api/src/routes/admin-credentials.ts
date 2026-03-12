@@ -512,16 +512,17 @@ router.post('/save', authMiddleware, superAdminMiddleware, async (req: Request, 
     );
     console.log('[AdminCredentials] Validation passed, proceeding to save...');
   } catch (err) {
-    const error = err as Error & { cause?: unknown; code?: string };
-    const errorMessage = error.message || 'Unknown error';
+    const errorMessage = err instanceof Error ? err.message : 'Unknown error';
     console.error('[AdminCredentials] Validation FAILED (will save anyway):');
     console.error(`[AdminCredentials]   Message: ${errorMessage}`);
-    console.error(`[AdminCredentials]   Name: ${error.name}`);
-    if (error.code) {
-      console.error(`[AdminCredentials]   Code: ${error.code}`);
-    }
-    if (error.cause) {
-      console.error('[AdminCredentials]   Cause:', error.cause);
+    if (err instanceof Error) {
+      console.error(`[AdminCredentials]   Name: ${err.name}`);
+      if ('code' in err && typeof err.code === 'string') {
+        console.error(`[AdminCredentials]   Code: ${err.code}`);
+      }
+      if (err.cause) {
+        console.error('[AdminCredentials]   Cause:', err.cause);
+      }
     }
     // Store warning but continue with save
     validationWarning = `Issuer discovery failed: ${errorMessage}`;

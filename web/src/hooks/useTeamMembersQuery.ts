@@ -1,5 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
 import { apiGet } from '@/lib/api';
+import { ApiError } from '@/lib/apiError';
 
 export interface TeamMember {
   id: string;
@@ -19,9 +20,7 @@ export const teamMemberKeys = {
 async function fetchTeamMembers(): Promise<TeamMember[]> {
   const res = await apiGet('/api/team/people');
   if (!res.ok) {
-    const error = new Error('Failed to fetch team members') as Error & { status: number };
-    error.status = res.status;
-    throw error;
+    throw new ApiError('Failed to fetch team members', res.status);
   }
   return res.json();
 }

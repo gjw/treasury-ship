@@ -1,5 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
 import { apiGet } from '@/lib/api';
+import { ApiError } from '@/lib/apiError';
 
 export interface PlanItem {
   text: string;
@@ -42,9 +43,7 @@ export interface FocusResponse {
 async function fetchFocus(): Promise<FocusResponse> {
   const res = await apiGet('/api/dashboard/my-focus');
   if (!res.ok) {
-    const error = new Error('Failed to fetch focus data') as Error & { status: number };
-    error.status = res.status;
-    throw error;
+    throw new ApiError('Failed to fetch focus data', res.status);
   }
   return res.json();
 }

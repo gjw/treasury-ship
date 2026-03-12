@@ -1,5 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
 import { apiGet } from '@/lib/api';
+import { ApiError } from '@/lib/apiError';
 
 export interface BreadcrumbItem {
   id: string;
@@ -47,9 +48,7 @@ export const documentContextKeys = {
 async function fetchDocumentContext(id: string): Promise<DocumentContext> {
   const res = await apiGet(`/api/documents/${id}/context`);
   if (!res.ok) {
-    const error = new Error('Failed to fetch document context') as Error & { status: number };
-    error.status = res.status;
-    throw error;
+    throw new ApiError('Failed to fetch document context', res.status);
   }
   return res.json();
 }
