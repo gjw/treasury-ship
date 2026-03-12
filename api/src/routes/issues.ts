@@ -12,6 +12,7 @@ import {
   type BelongsToEntry,
 } from '../utils/document-crud.js';
 import { broadcastToUser } from '../collaboration/index.js';
+import type { SqlParam } from '../types/sql.js';
 
 type RouterType = ReturnType<typeof Router>;
 const router: RouterType = Router();
@@ -79,35 +80,35 @@ const rejectIssueSchema = z.object({
 });
 
 // Helper to extract issue properties from row (without belongs_to - added separately)
-function extractIssueFromRow(row: any) {
-  const props = row.properties || {};
+function extractIssueFromRow(row: Record<string, unknown>) {
+  const props = (row.properties || {}) as Record<string, unknown>;
   return {
-    id: row.id,
-    title: row.title,
-    state: props.state || 'backlog',
-    priority: props.priority || 'medium',
-    assignee_id: props.assignee_id || null,
+    id: row.id as string,
+    title: row.title as string,
+    state: (props.state as string) || 'backlog',
+    priority: (props.priority as string) || 'medium',
+    assignee_id: (props.assignee_id as string) || null,
     estimate: props.estimate ?? null,
-    source: props.source || 'internal',
-    rejection_reason: props.rejection_reason || null,
+    source: (props.source as string) || 'internal',
+    rejection_reason: (props.rejection_reason as string) || null,
     // Accountability fields for action_items issues
-    due_date: props.due_date || null,
-    is_system_generated: props.is_system_generated || false,
-    accountability_target_id: props.accountability_target_id || null,
-    accountability_type: props.accountability_type || null,
-    ticket_number: row.ticket_number,
+    due_date: (props.due_date as string) || null,
+    is_system_generated: (props.is_system_generated as boolean) || false,
+    accountability_target_id: (props.accountability_target_id as string) || null,
+    accountability_type: (props.accountability_type as string) || null,
+    ticket_number: row.ticket_number as number,
     content: row.content,
-    created_at: row.created_at,
-    updated_at: row.updated_at,
-    created_by: row.created_by,
-    started_at: row.started_at || null,
-    completed_at: row.completed_at || null,
-    cancelled_at: row.cancelled_at || null,
-    reopened_at: row.reopened_at || null,
-    converted_from_id: row.converted_from_id || null,
-    assignee_name: row.assignee_name,
-    assignee_archived: row.assignee_archived || false,
-    created_by_name: row.created_by_name,
+    created_at: row.created_at as string,
+    updated_at: row.updated_at as string,
+    created_by: row.created_by as string,
+    started_at: (row.started_at as string) || null,
+    completed_at: (row.completed_at as string) || null,
+    cancelled_at: (row.cancelled_at as string) || null,
+    reopened_at: (row.reopened_at as string) || null,
+    converted_from_id: (row.converted_from_id as string) || null,
+    assignee_name: row.assignee_name as string,
+    assignee_archived: (row.assignee_archived as boolean) || false,
+    created_by_name: row.created_by_name as string,
   };
 }
 
@@ -137,7 +138,7 @@ router.get('/', authMiddleware, async (req: Request, res: Response) => {
       WHERE d.workspace_id = $1 AND d.document_type = 'issue'
         AND ${VISIBILITY_FILTER_SQL('d', '$2', '$3')}
     `;
-    const params: (string | boolean | null)[] = [workspaceId, userId, isAdmin];
+    const params: SqlParam[] = [workspaceId, userId, isAdmin];
 
     // Exclude archived and deleted issues by default
     query += ` AND d.archived_at IS NULL AND d.deleted_at IS NULL`;
@@ -152,7 +153,7 @@ router.get('/', authMiddleware, async (req: Request, res: Response) => {
     if (state) {
       const states = (state as string).split(',');
       query += ` AND d.properties->>'state' = ANY($${params.length + 1})`;
-      params.push(states as any);
+      params.push(states);
     }
 
     if (priority) {
@@ -705,7 +706,7 @@ router.patch('/:id', authMiddleware, async (req: Request, res: Response) => {
     const existingIssue = existing.rows[0];
     const currentProps = existingIssue.properties || {};
     const updates: string[] = [];
-    const values: any[] = [];
+    const values: SqlParam[] = [];
     let paramIndex = 1;
 
     const data = parsed.data;
@@ -1207,7 +1208,7 @@ router.post('/bulk', authMiddleware, async (req: Request, res: Response) => {
         }
 
         const setClauses: string[] = ['updated_at = NOW()'];
-        const values: any[] = [validIds, workspaceId];
+        const values: SqlParam[] = [validIds, workspaceId];
         let paramIdx = 3;
 
         if (updates.state !== undefined) {

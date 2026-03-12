@@ -6,16 +6,36 @@ import { isWorkspaceAdmin } from '../middleware/visibility.js';
 import { handleVisibilityChange, handleDocumentConversion, invalidateDocumentCache, broadcastToUser } from '../collaboration/index.js';
 import { extractHypothesisFromContent, extractSuccessCriteriaFromContent, extractVisionFromContent, extractGoalsFromContent, checkDocumentCompleteness } from '../utils/extractHypothesis.js';
 import { loadContentFromYjsState } from '../utils/yjsConverter.js';
+import type { SqlParam } from '../types/sql.js';
 
 type RouterType = ReturnType<typeof Router>;
 const router: RouterType = Router();
+
+/** Row shape returned by SELECT d.* FROM documents. */
+interface DocumentRow {
+  [key: string]: unknown;
+  id: string;
+  title: string;
+  document_type: string;
+  properties: Record<string, unknown> | null;
+  content: unknown;
+  parent_id: string | null;
+  workspace_id: string;
+  created_by: string | null;
+  visibility: string;
+  archived_at: string | null;
+  deleted_at: string | null;
+  created_at: string;
+  updated_at: string;
+  can_access?: boolean;
+}
 
 // Check if user can access a document (visibility check)
 async function canAccessDocument(
   docId: string,
   userId: string,
   workspaceId: string
-): Promise<{ canAccess: boolean; doc: any | null }> {
+): Promise<{ canAccess: boolean; doc: DocumentRow | null }> {
   const result = await pool.query(
     `SELECT d.*,
             (d.visibility = 'workspace' OR d.created_by = $2 OR
@@ -645,7 +665,7 @@ router.patch('/:id', authMiddleware, async (req: Request, res: Response) => {
     await client.query('BEGIN');
 
     const updates: string[] = [];
-    const values: any[] = [];
+    const values: SqlParam[] = [];
     let paramIndex = 1;
 
     // Track extracted values from content (content is source of truth)
@@ -737,7 +757,7 @@ router.patch('/:id', authMiddleware, async (req: Request, res: Response) => {
     if (data.properties !== undefined || contentUpdated || hasTopLevelProps) {
       const currentProps = existing.properties || {};
       const dataProps = data.properties || {};
-      let newProps = {
+      let newProps: Record<string, unknown> = {
         ...currentProps,
         ...dataProps,
         ...topLevelProps,
@@ -1026,7 +1046,7 @@ router.patch('/:id', authMiddleware, async (req: Request, res: Response) => {
 
     // Notify WebSocket collaboration server to disconnect users who lost access
     if (data.visibility !== undefined && data.visibility !== existing.visibility) {
-      handleVisibilityChange(id, data.visibility, existing.created_by).catch((err) => {
+      handleVisibilityChange(id, data.visibility, existing.created_by ?? '').catch((err) => {
         console.error('Failed to handle visibility change for collaboration:', err);
       });
     }

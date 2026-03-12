@@ -4,34 +4,35 @@ import { z } from 'zod';
 import { getVisibilityContext, VISIBILITY_FILTER_SQL } from '../middleware/visibility.js';
 import { authMiddleware } from '../middleware/auth.js';
 import { logAuditEvent } from '../services/audit.js';
+import type { SqlParam } from '../types/sql.js';
 
 type RouterType = ReturnType<typeof Router>;
 const router: RouterType = Router();
 
 // Helper to extract program from row
-function extractProgramFromRow(row: any) {
-  const props = row.properties || {};
+function extractProgramFromRow(row: Record<string, unknown>) {
+  const props = (row.properties || {}) as Record<string, unknown>;
   return {
-    id: row.id,
-    name: row.title,
-    color: props.color || '#6366f1',
-    emoji: props.emoji || null,
-    archived_at: row.archived_at,
-    created_at: row.created_at,
-    updated_at: row.updated_at,
-    issue_count: row.issue_count,
-    sprint_count: row.sprint_count,
+    id: row.id as string,
+    name: row.title as string,
+    color: (props.color as string) || '#6366f1',
+    emoji: (props.emoji as string) || null,
+    archived_at: row.archived_at as string | null,
+    created_at: row.created_at as string,
+    updated_at: row.updated_at as string,
+    issue_count: row.issue_count as number,
+    sprint_count: row.sprint_count as number,
     // owner_id in properties takes precedence over created_by
     owner: row.owner_name ? {
-      id: row.owner_id,
-      name: row.owner_name,
-      email: row.owner_email,
+      id: row.owner_id as string,
+      name: row.owner_name as string,
+      email: row.owner_email as string,
     } : null,
-    owner_id: props.owner_id || null,
+    owner_id: (props.owner_id as string) || null,
     // RACI fields
-    accountable_id: props.accountable_id || null,
-    consulted_ids: props.consulted_ids || [],
-    informed_ids: props.informed_ids || [],
+    accountable_id: (props.accountable_id as string) || null,
+    consulted_ids: (props.consulted_ids as string[]) || [],
+    informed_ids: (props.informed_ids as string[]) || [],
   };
 }
 
@@ -223,7 +224,7 @@ router.patch('/:id', authMiddleware, async (req: Request, res: Response) => {
 
     const currentProps = existing.rows[0].properties || {};
     const updates: string[] = [];
-    const values: any[] = [];
+    const values: SqlParam[] = [];
     let paramIndex = 1;
 
     const data = parsed.data;
