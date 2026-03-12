@@ -212,16 +212,17 @@ export function ReviewsPage() {
     setData(prev => {
       if (!prev) return prev;
       const updated = { ...prev, reviews: { ...prev.reviews } };
-      updated.reviews[personId] = { ...updated.reviews[personId] };
-      updated.reviews[personId][weekNumber] = {
-        ...updated.reviews[personId][weekNumber],
+      const personReviews = { ...updated.reviews[personId] };
+      updated.reviews[personId] = personReviews;
+      personReviews[weekNumber] = {
+        ...personReviews[weekNumber],
         planApproval: {
           state: 'approved',
           approved_by: null,
           approved_at: new Date().toISOString(),
           comment: comment?.trim() || null,
         },
-      };
+      } as ReviewCell;
       return updated;
     });
 
@@ -245,11 +246,12 @@ export function ReviewsPage() {
     setData(prev => {
       if (!prev) return prev;
       const updated = { ...prev, reviews: { ...prev.reviews } };
-      updated.reviews[personId] = { ...updated.reviews[personId] };
-      updated.reviews[personId][weekNumber] = {
-        ...updated.reviews[personId][weekNumber],
+      const personReviews = { ...updated.reviews[personId] };
+      updated.reviews[personId] = personReviews;
+      personReviews[weekNumber] = {
+        ...personReviews[weekNumber],
         [approvalField]: { state: 'changes_requested', approved_by: null, approved_at: new Date().toISOString(), feedback },
-      };
+      } as ReviewCell;
       return updated;
     });
 
@@ -270,9 +272,10 @@ export function ReviewsPage() {
     setData(prev => {
       if (!prev) return prev;
       const updated = { ...prev, reviews: { ...prev.reviews } };
-      updated.reviews[personId] = { ...updated.reviews[personId] };
-      updated.reviews[personId][weekNumber] = {
-        ...updated.reviews[personId][weekNumber],
+      const personReviews = { ...updated.reviews[personId] };
+      updated.reviews[personId] = personReviews;
+      personReviews[weekNumber] = {
+        ...personReviews[weekNumber],
         reviewApproval: {
           state: 'approved',
           approved_by: null,
@@ -280,7 +283,7 @@ export function ReviewsPage() {
           comment: comment?.trim() || null,
         },
         reviewRating: { value: rating, rated_by: '', rated_at: new Date().toISOString() },
-      };
+      } as ReviewCell;
       return updated;
     });
 

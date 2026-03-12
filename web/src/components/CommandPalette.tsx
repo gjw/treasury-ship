@@ -78,16 +78,14 @@ export function CommandPalette({ open, onOpenChange, currentDocument, onConvertD
         nextIndex = currentIndex >= focusableElements.length - 1 ? 0 : currentIndex + 1;
       }
 
-      focusableElements[nextIndex].focus();
+      focusableElements[nextIndex]?.focus();
     };
 
     // Fallback: if focus escapes to anywhere outside dialog, bring it back immediately
     const handleFocusIn = (e: FocusEvent) => {
       if (!dialog.contains(e.target as Node)) {
         const focusableElements = getFocusableElements();
-        if (focusableElements.length > 0) {
-          focusableElements[0].focus();
-        }
+        focusableElements[0]?.focus();
       }
     };
 
@@ -167,18 +165,19 @@ export function CommandPalette({ open, onOpenChange, currentDocument, onConvertD
 
   // Group documents by type for display
   const groupedDocuments = useMemo(() => {
-    const groups: Record<string, SearchableDocument[]> = {
-      issue: [],
-      wiki: [],
-      program: [],
-      project: [],
-      sprint: [],
-      person: [],
+    const groups = {
+      issue: [] as SearchableDocument[],
+      wiki: [] as SearchableDocument[],
+      program: [] as SearchableDocument[],
+      project: [] as SearchableDocument[],
+      sprint: [] as SearchableDocument[],
+      person: [] as SearchableDocument[],
     };
 
     for (const doc of documents) {
-      if (groups[doc.document_type]) {
-        groups[doc.document_type].push(doc);
+      const key = doc.document_type;
+      if (key in groups) {
+        groups[key as keyof typeof groups].push(doc);
       }
     }
 

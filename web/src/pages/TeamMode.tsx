@@ -246,8 +246,8 @@ export function TeamModePage() {
 
       if (json.weeks.length > 0) {
         setSprintRange({
-          min: json.weeks[0].number,
-          max: json.weeks[json.weeks.length - 1].number,
+          min: json.weeks[0]!.number,
+          max: json.weeks[json.weeks.length - 1]!.number,
         });
       }
 
@@ -515,6 +515,7 @@ export function TeamModePage() {
       const timer = setTimeout(() => setError(null), 3000);
       return () => clearTimeout(timer);
     }
+    return undefined;
   }, [error]);
 
   if (loading) {
