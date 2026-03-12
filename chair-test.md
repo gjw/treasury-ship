@@ -30,11 +30,12 @@
 ## 2. Code Block Syntax Highlighting (Editor)
 
 - Open any document (wiki, issue, etc.)
-- In the editor body, type triple backticks (```) and press Enter to create a code block
+- In the editor body, type ` ```javascript ` (triple backticks + language name) and press Enter
 - Type some code, e.g.: `const x = "hello";`
 - **Verify:** Syntax highlighting colors appear (keywords in red, strings in blue, etc.)
-- Alternative: type `/code` slash command to insert a code block
-- **Verify:** Language selector works (click language label, pick "python" or "javascript")
+- Try another language: type ` ```python ` + Enter, then `def foo(): return True`
+- **Verify:** Python keywords highlight differently from JS
+- Alternative: type `/code` slash command to insert a plain code block (no highlighting until language is set)
 - **Network tab:** A lowlight/highlight chunk may have loaded when you first navigated to the editor page
 
 ## 3. Diff Viewer (ApprovalButton)
