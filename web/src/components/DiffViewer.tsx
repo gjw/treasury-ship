@@ -1,5 +1,6 @@
 import { useMemo } from 'react';
 import DiffMatchPatch from 'diff-match-patch';
+import type { TipTapNode } from '@ship/shared';
 
 interface DiffViewerProps {
   oldContent: string;
@@ -62,59 +63,63 @@ export function DiffViewer({ oldContent, newContent, className = '' }: DiffViewe
  * Helper function to convert TipTap JSON content to plain text for diffing.
  * Recursively extracts text content from the TipTap document structure.
  */
-export function tipTapToPlainText(content: Record<string, unknown> | null | undefined): string {
-  if (!content) return '';
+function isTipTapNode(value: unknown): value is TipTapNode {
+  return typeof value === 'object' && value !== null && 'type' in value && typeof (value as { type: unknown }).type === 'string';
+}
 
-  const extractText = (node: Record<string, unknown>): string => {
+export function tipTapToPlainText(content: TipTapNode | Record<string, unknown> | null | undefined): string {
+  if (!content || !isTipTapNode(content)) return '';
+
+  const extractText = (node: TipTapNode): string => {
     // Handle text nodes
-    if (node.type === 'text' && typeof node.text === 'string') {
+    if (node.type === 'text' && node.text) {
       return node.text;
     }
 
     // Handle paragraph nodes - add newline after
     if (node.type === 'paragraph') {
-      const childContent = Array.isArray(node.content)
-        ? node.content.map((child) => extractText(child as Record<string, unknown>)).join('')
+      const childContent = node.content
+        ? node.content.map((child) => extractText(child)).join('')
         : '';
       return childContent + '\n';
     }
 
     // Handle heading nodes - add newline after
     if (node.type === 'heading') {
-      const childContent = Array.isArray(node.content)
-        ? node.content.map((child) => extractText(child as Record<string, unknown>)).join('')
+      const childContent = node.content
+        ? node.content.map((child) => extractText(child)).join('')
         : '';
       return childContent + '\n';
     }
 
     // Handle bulletList and orderedList
     if (node.type === 'bulletList' || node.type === 'orderedList') {
-      const items = Array.isArray(node.content)
-        ? node.content.map((child) => extractText(child as Record<string, unknown>)).join('')
+      const items = node.content
+        ? node.content.map((child) => extractText(child)).join('')
         : '';
       return items;
     }
 
     // Handle listItem
     if (node.type === 'listItem') {
-      const childContent = Array.isArray(node.content)
-        ? node.content.map((child) => extractText(child as Record<string, unknown>)).join('')
+      const childContent = node.content
+        ? node.content.map((child) => extractText(child)).join('')
         : '';
       return '• ' + childContent;
     }
 
     // Handle blockquote
     if (node.type === 'blockquote') {
-      const childContent = Array.isArray(node.content)
-        ? node.content.map((child) => extractText(child as Record<string, unknown>)).join('')
+      const childContent = node.content
+        ? node.content.map((child) => extractText(child)).join('')
         : '';
       return '> ' + childContent;
     }
 
     // Handle codeBlock
     if (node.type === 'codeBlock') {
-      const childContent = Array.isArray(node.content)
-        ? node.content.map((child) => extractText(child as Record<string, unknown>)).join('')
+      const childContent = node.content
+        ? node.content.map((child) => extractText(child)).join('')
         : '';
       return '```\n' + childContent + '```\n';
     }
@@ -124,14 +129,9 @@ export function tipTapToPlainText(content: Record<string, unknown> | null | unde
       return '\n';
     }
 
-    // Handle doc node (root)
-    if (node.type === 'doc' && Array.isArray(node.content)) {
-      return node.content.map((child) => extractText(child as Record<string, unknown>)).join('');
-    }
-
-    // Handle any other node with content
-    if (Array.isArray(node.content)) {
-      return node.content.map((child) => extractText(child as Record<string, unknown>)).join('');
+    // Handle any node with content (including doc)
+    if (node.content) {
+      return node.content.map((child) => extractText(child)).join('');
     }
 
     return '';

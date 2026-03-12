@@ -174,11 +174,12 @@ function ContentDiff({ entry, onClose }: ContentDiffProps) {
 
     function traverse(node: unknown) {
       if (typeof node !== 'object' || node === null) return;
-      const n = node as Record<string, unknown>;
+      if (!('type' in node)) return;
+      const n = node as { type: unknown; text?: unknown; content?: unknown };
       if (n.type === 'text' && typeof n.text === 'string') {
         texts.push(n.text);
       }
-      if (n.content && Array.isArray(n.content)) {
+      if (Array.isArray(n.content)) {
         for (const child of n.content) {
           traverse(child);
         }
