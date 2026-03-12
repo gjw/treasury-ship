@@ -78,7 +78,8 @@ export function CommandPalette({ open, onOpenChange, currentDocument, onConvertD
         nextIndex = currentIndex >= focusableElements.length - 1 ? 0 : currentIndex + 1;
       }
 
-      focusableElements[nextIndex]?.focus();
+      // nextIndex is computed from focusableElements.length, always in bounds
+      focusableElements[nextIndex]!.focus();
     };
 
     // Fallback: if focus escapes to anywhere outside dialog, bring it back immediately
