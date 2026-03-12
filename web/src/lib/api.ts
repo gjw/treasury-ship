@@ -2,6 +2,15 @@
 // In production, use VITE_API_URL or relative URLs
 const API_URL = import.meta.env.VITE_API_URL ?? '';
 
+/** Convert a params object to URLSearchParams, filtering undefined values and stringifying numbers/booleans */
+function toSearchParams(params: Record<string, string | number | boolean | undefined>): URLSearchParams {
+  const entries: [string, string][] = [];
+  for (const [k, v] of Object.entries(params)) {
+    if (v !== undefined) entries.push([k, String(v)]);
+  }
+  return new URLSearchParams(entries);
+}
+
 interface ApiResponse<T> {
   success: boolean;
   data?: T;
@@ -407,7 +416,7 @@ export const api = {
     // Audit logs (workspace admin)
     getAuditLogs: (workspaceId: string, params?: { limit?: number; offset?: number }) =>
       request<{ logs: AuditLog[] }>(
-        `/api/workspaces/${workspaceId}/audit-logs${params ? `?${new URLSearchParams(params as Record<string, string>)}` : ''}`
+        `/api/workspaces/${workspaceId}/audit-logs${params ? `?${toSearchParams(params)}` : ''}`
       ),
   },
 
@@ -489,10 +498,10 @@ export const api = {
 
     // Audit logs (super-admin)
     getAuditLogs: (params?: { workspaceId?: string; userId?: string; action?: string; limit?: number; offset?: number }) =>
-      request<{ logs: AuditLog[] }>(`/api/admin/audit-logs${params ? `?${new URLSearchParams(params as Record<string, string>)}` : ''}`),
+      request<{ logs: AuditLog[] }>(`/api/admin/audit-logs${params ? `?${toSearchParams(params)}` : ''}`),
 
     exportAuditLogs: (params?: { workspaceId?: string; userId?: string; action?: string; from?: string; to?: string }) =>
-      `${API_URL}/api/admin/audit-logs/export${params ? `?${new URLSearchParams(params as Record<string, string>)}` : ''}`,
+      `${API_URL}/api/admin/audit-logs/export${params ? `?${toSearchParams(params)}` : ''}`,
 
     // Impersonation
     startImpersonation: (userId: string) =>
