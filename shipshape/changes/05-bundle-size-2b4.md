@@ -57,6 +57,17 @@ pnpm dev                                 # Manual verify (see checklist below)
 3. **Diff viewer:** Find or create a document with approval state "changed_since_approved" → click "View changes since last approval" → verify diff modal shows with red/green highlighting
 4. **Initial load:** Hard refresh → verify no emoji/lowlight/diff chunks in initial network waterfall
 
+## Known Issue: Emoji Picker Save Broken (400 Bad Request)
+
+**Severity:** The emoji picker UI loads and renders correctly (lazy-loading works), but selecting an emoji fails with a 400 from `PATCH /api/documents/:id`. The `emoji` field is not in the `updateDocumentSchema` Zod validation in `api/src/routes/documents.ts` (line 71-111), so the API rejects the payload.
+
+**Action required before final report:** Roll back to the original fork (before any GFA changes) and test whether the emoji picker save worked there.
+
+- **If it worked on the original fork:** The type-safety work (q6y) or a subsequent change broke it — likely by tightening validation schemas that previously passed unknown fields through. This is a regression we introduced and must fix.
+- **If it was already broken on the original fork:** This is a pre-existing bug we discovered during testing. Call it out as an extra finding in the report.
+
+**The lazy-loading change (2b4) did not cause this.** The `onChange` callback path is identical before and after — the only change is *when* the picker widget loads, not what happens when you select an emoji. The 400 comes from the API's Zod schema missing the `emoji` field, which is unrelated to frontend bundling.
+
 ## What to Know for Next Time
 
 - `tipTapToPlainText` now lives in its own file (`web/src/components/tipTapToPlainText.ts`) separate from `DiffViewer.tsx`. A re-export in `DiffViewer.tsx` maintains backwards compatibility for any future consumers.
