@@ -107,8 +107,8 @@ export function useSelection<T>({
     setSelectedIds(prev => {
       const next = new Set(prev);
       for (let i = start; i <= end; i++) {
-        // Bounds guaranteed by indexOf + Math.min/max above
-        next.add(itemIds[i]!);
+        const id = itemIds[i];
+        if (id) next.add(id);
       }
       return next;
     });
@@ -172,7 +172,7 @@ export function useSelection<T>({
 
     // Determine anchor point (where selection started)
     // Priority: lastSelectedId > focusedId > hoveredId > first item
-    const anchor = lastSelectedId || focusedId || hoveredId || itemIds[0];
+    const anchor = lastSelectedId ?? focusedId ?? hoveredId ?? itemIds[0];
     if (!anchor) return;
     const anchorIdx = itemIds.indexOf(anchor);
     if (anchorIdx === -1) return;
@@ -210,8 +210,8 @@ export function useSelection<T>({
     setSelectedIds(() => {
       const next = new Set<string>();
       for (let i = start; i <= end; i++) {
-        // Bounds guaranteed by anchorIdx/newIdx clamping above
-        next.add(itemIds[i]!);
+        const id = itemIds[i];
+        if (id) next.add(id);
       }
       return next;
     });
@@ -220,7 +220,7 @@ export function useSelection<T>({
 
     // Keep lastSelectedId at anchor for continued range operations
     if (!lastSelectedId) {
-      setLastSelectedId(anchor ?? null);
+      setLastSelectedId(anchor);
     }
   }, [itemIds, focusedId, lastSelectedId, hoveredId]);
 

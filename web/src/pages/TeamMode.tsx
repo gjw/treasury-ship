@@ -244,10 +244,12 @@ export function TeamModePage() {
       if (!res.ok) throw new Error('Failed to fetch team grid');
       const json: TeamGridData = await res.json();
 
-      if (json.weeks.length > 0) {
+      const firstWeek = json.weeks[0];
+      const lastWeek = json.weeks[json.weeks.length - 1];
+      if (firstWeek && lastWeek) {
         setSprintRange({
-          min: json.weeks[0]!.number,
-          max: json.weeks[json.weeks.length - 1]!.number,
+          min: firstWeek.number,
+          max: lastWeek.number,
         });
       }
 

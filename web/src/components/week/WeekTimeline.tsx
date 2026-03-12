@@ -338,10 +338,11 @@ export function WeekTimeline({
       const year = window.start_date.getFullYear();
 
       if (!currentGroup || currentGroup.month !== monthName || currentGroup.year !== year) {
-        currentGroup = { month: monthName, year, windows: [] };
+        currentGroup = { month: monthName, year, windows: [window] };
         groups.push(currentGroup);
+      } else {
+        currentGroup.windows.push(window);
       }
-      currentGroup!.windows.push(window);
     });
 
     return groups;
@@ -363,7 +364,8 @@ export function WeekTimeline({
 
     if (windowIndex === -1) return null; // Today is not visible in current range
 
-    const window = windows[windowIndex]!;
+    const window = windows[windowIndex];
+    if (!window) return null;
     const windowStart = new Date(window.start_date);
     windowStart.setHours(0, 0, 0, 0);
 

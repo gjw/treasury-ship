@@ -12,7 +12,7 @@ Using audit grep methodology (`rg '\bas\s+[A-Z]' --type ts web/src/ | grep -v te
 |--------|--------|-------|-------|
 | `any` usage | 27 | 27 | 0 |
 | `as X` casts | 171 | 144 | **-27** |
-| Non-null assertions | 10 | 11 | +1 |
+| Non-null assertions (`!`) | 10 | 0 | **-10** |
 
 ## F1: Strict tsconfig flags (22 files, 102 errors fixed)
 
@@ -21,25 +21,25 @@ Added `noUncheckedIndexedAccess`, `noImplicitReturns`, `noFallthroughCasesInSwit
 | File | What was wrong | Fix | Why correct |
 |------|---------------|-----|-------------|
 | `web/tsconfig.json` | Missing 3 strict flags present in root tsconfig | Added all 3 | Aligns web with root tsconfig strictness |
-| `cn.ts` | `sRGB[0..2]`, `hex[0..2]`, `match[1..3]` returned `T\|undefined` | Replaced `.map()` indexing with direct function calls; `!` for hex/regex | Bounds proven by `.length === 3` and 3 capture groups |
-| `useSelection.ts` | `itemIds[i]` possibly undefined in bounded loops | `!` where loop bounds guarantee; `?? null` for nullable state | Loop guards ensure valid indices |
-| `CommandPalette.tsx` | `Record<string, T[]>` indexing returns `T[]\|undefined`; focus element indexing | Typed groups with explicit keys object; `?.focus()` for focus | Known keys initialized in useMemo; defensive for focus |
-| `AIScoringDisplay.tsx` | Array indexing on match-map results; `descendants` callback missing return | `!` for map-matched indices; `return true` for ProseMirror callback | Match map guarantees indices exist; descendants expects boolean |
-| `CommentDisplay.tsx` | `thread[0]` possibly undefined | `thread[0]!` — called only when `thread.length > 0` | Guard ensures non-empty |
-| `DashboardVariantC.tsx` | `days[0]`, `days[3]` possibly undefined on static 7-element array | Destructured to named vars with `!` | Static array, indices 0 and 3 always exist |
+| `cn.ts` | `sRGB[0..2]`, `hex[0..2]`, `match[1..3]` returned `T\|undefined` | Replaced `.map()` indexing with direct function calls; extracted hex chars with early return guard; combined regex match guard | Runtime guards instead of `!` |
+| `useSelection.ts` | `itemIds[i]` possibly undefined in bounded loops | `if (id) next.add(id)` guard in loops; `?? null` for nullable state | Runtime guard skips undefined indices |
+| `CommandPalette.tsx` | `Record<string, T[]>` indexing returns `T[]\|undefined`; focus element indexing | Typed groups with explicit keys object; `if (nextEl) nextEl.focus()` guard | Known keys initialized in useMemo; runtime guard for focus |
+| `AIScoringDisplay.tsx` | Array indexing on match-map results; `descendants` callback missing return | `if (!listItem) continue` guard; `return true` for ProseMirror callback | Runtime guard; descendants expects boolean |
+| `CommentDisplay.tsx` | `thread[0]` possibly undefined | `if (!root) return` early guard | Runtime safety for empty thread |
+| `DashboardVariantC.tsx` | `days[0]`, `days[3]` possibly undefined on static 7-element array | Declared named vars (`monday`, `thursday`) before array construction | No indexing needed |
 | `EmojiExtension.ts` | `handler` returns `null` in some branches but not all | Added `: null \| void` return type annotation | InputRule handler allows both |
 | `ResizableImage.tsx` | `useEffect` returns cleanup only in `if` branch | Added `return undefined` in else | React expects consistent cleanup return |
 | `InlineWeekSelector.tsx` | Two `useEffect`s return cleanup only conditionally | Added `return undefined` in else branches | Consistent effect cleanup |
 | `SessionTimeoutModal.tsx` | `useEffect` returns cleanup only when `open` | Added `return undefined` | Consistent effect cleanup |
-| `VisibilityDropdown.tsx` | `options[1]` possibly undefined as fallback | `?? options[1]!` — static 2-element array | Fallback always exists |
-| `ProjectCombobox.tsx` | `projectsByProgram[key]` and `[0]` possibly undefined | `?.` for dynamic lookup; `!` after `Object.keys` guarantees key exists | Keys iterated from same object |
-| `WeekTimeline.tsx` | `monthNames[index]` and `windows[index]` possibly undefined | `?? 'Unknown'` for month; `!` after `findIndex !== -1` guard | Month array is static 12 elements; guard ensures valid index |
-| `Dashboard.tsx` | `overdueItems[0]` possibly undefined | `overdueItems[0]!` — inside `length === 1` guard | Guard ensures element exists |
+| `VisibilityDropdown.tsx` | `options[1]` possibly undefined as fallback | `if (!selected) return null` early guard | Runtime safety |
+| `ProjectCombobox.tsx` | `projectsByProgram[key]` and `[0]` possibly undefined | `if (!programProjects) return null` guard; `?.` for dynamic lookup | Runtime guard for dynamic keys |
+| `WeekTimeline.tsx` | `monthNames[index]` and `windows[index]` possibly undefined | `?? 'Unknown'` for month; `if (!window) return null` guard | Runtime guards |
+| `Dashboard.tsx` | `overdueItems[0]` possibly undefined | `overdueItems.length === 1 && overdueItems[0]` guard in JSX condition | Truthy check narrows away undefined |
 | `ReviewsPage.tsx` | Nested `reviews[personId][weekNumber]` possibly undefined from `noUncheckedIndexedAccess` | Destructured to intermediate var; `as ReviewCell` for spread result | Optimistic update — keys known to exist from caller |
-| `TeamMode.tsx` | `json.weeks[0]`, `json.weeks[last]` possibly undefined; conditional effect return | `!` inside `length > 0` guard; `return undefined` | Guard ensures non-empty |
+| `TeamMode.tsx` | `json.weeks[0]`, `json.weeks[last]` possibly undefined; conditional effect return | Extracted to named vars with `if (firstWeek && lastWeek)` guard; `return undefined` | Runtime guard |
 | `UnifiedDocumentPage.tsx` | `tabs[0]?.id` returns `string \| undefined` for `activeTab: string` | Added `\|\| ''` fallback | Empty string is safe default for tab ID |
-| `WorkspaceSettings.tsx` | `admins[0]` possibly undefined | `admins[0]!` inside `length === 1` guard | Guard ensures element exists |
-| `StandupFeed.tsx` | `groups[label]` possibly undefined after initialization check | `groups[label]!` — preceded by `if (!groups[label]) groups[label] = []` | Initialization guarantees non-undefined |
+| `WorkspaceSettings.tsx` | `admins[0]` possibly undefined | `admins[0]?.userId` optional chaining | Runtime safe |
+| `StandupFeed.tsx` | `groups[label]` possibly undefined after initialization check | `if (group) group.push(standup)` guard | Runtime guard |
 | `WeekSidebar.tsx` | `OPM_RATING_LABELS[rating]` possibly undefined | Changed `.label` to `?.label` | Defensive — rating might not be in map |
 | `TableOfContents.test.ts` | `headings[0]`, `headings[1]`, `headings[2]` possibly undefined | `!` after `toHaveLength(N)` assertion | Assertion proves indices exist |
 
