@@ -1353,14 +1353,13 @@ function TipTapContent({ content }: { content: unknown }) {
     return <p className="text-sm text-muted italic">Empty</p>;
   }
 
-  const doc = content as { type?: string; content?: unknown[] };
-  if (!doc.content || !Array.isArray(doc.content)) {
+  if (!('content' in content) || !Array.isArray(content.content)) {
     return <p className="text-sm text-muted italic">Empty</p>;
   }
 
   return (
     <div className="text-sm text-foreground space-y-2">
-      {doc.content.map((node, i) => (
+      {content.content.map((node, i) => (
         <TipTapNode key={i} node={node} />
       ))}
     </div>
@@ -1369,7 +1368,8 @@ function TipTapContent({ content }: { content: unknown }) {
 
 function TipTapNode({ node }: { node: unknown }) {
   if (!node || typeof node !== 'object') return null;
-  const n = node as { type?: string; content?: unknown[]; text?: string; attrs?: Record<string, unknown>; marks?: Array<{ type: string }> };
+  if (!('type' in node)) return null;
+  const n = node as { type: string; content?: unknown[]; text?: string; attrs?: Record<string, unknown>; marks?: Array<{ type: string }> };
 
   if (n.type === 'text') {
     let text = <>{n.text}</>;

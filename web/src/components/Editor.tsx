@@ -83,7 +83,7 @@ interface EditorProps {
   /** Banner content rendered between the title and editor content (e.g., AI quality check) */
   contentBanner?: React.ReactNode;
   /** Callback when editor content changes (debounced). Receives TipTap JSON content. */
-  onContentChange?: (content: Record<string, unknown>) => void;
+  onContentChange?: (content: JSONContent) => void;
   /** AI scoring analysis data to render as inline decorations */
   aiScoringAnalysis?: { planAnalysis?: unknown; retroAnalysis?: unknown } | null;
   /** Suffix displayed after the title in the header (e.g., author name) */
@@ -758,7 +758,7 @@ export function Editor({
       clearTimeout(debounceTimer);
       debounceTimer = setTimeout(() => {
         const json = editor.getJSON();
-        onContentChange(json as Record<string, unknown>);
+        onContentChange(json);
       }, 3000);
     };
 
