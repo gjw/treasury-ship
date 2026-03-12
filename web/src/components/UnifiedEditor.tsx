@@ -95,6 +95,17 @@ interface SprintDocument extends BaseDocument {
 // Union type for all document types
 export type UnifiedDocument = WikiDocument | IssueDocument | ProjectDocument | SprintDocument | BaseDocument;
 
+// Type guards for discriminated union narrowing (needed because BaseDocument has non-literal document_type)
+function isIssueDocument(doc: UnifiedDocument): doc is IssueDocument {
+  return doc.document_type === 'issue';
+}
+function isProjectDocument(doc: UnifiedDocument): doc is ProjectDocument {
+  return doc.document_type === 'project';
+}
+function isSprintDocument(doc: UnifiedDocument): doc is SprintDocument {
+  return doc.document_type === 'sprint';
+}
+
 // Sidebar data types
 interface WikiSidebarData {
   teamMembers: Person[];
@@ -114,7 +125,7 @@ interface IssueSidebarData {
 }
 
 interface ProjectSidebarData {
-  programs: Array<{ id: string; name: string; emoji?: string | null }>;
+  programs: Array<{ id: string; name: string; color: string; emoji?: string | null }>;
   people: Person[];
   onConvert?: () => void;
   onUndoConversion?: () => void;
@@ -132,6 +143,23 @@ interface ProgramSidebarData {
 }
 
 export type SidebarData = WikiSidebarData | IssueSidebarData | ProjectSidebarData | SprintSidebarData | ProgramSidebarData;
+
+// Map document types to their sidebar data types for type-safe access
+interface SidebarDataMap {
+  wiki: WikiSidebarData;
+  issue: IssueSidebarData;
+  project: ProjectSidebarData;
+  sprint: SprintSidebarData;
+  program: ProgramSidebarData;
+}
+
+/** Narrow sidebar data by document type. Callers pass the correct shape per type. */
+function narrowSidebarData<K extends keyof SidebarDataMap>(
+  data: SidebarData | Record<string, never>,
+  _type: K,
+): SidebarDataMap[K] {
+  return data as SidebarDataMap[K];
+}
 
 interface UnifiedEditorProps {
   /** The document to edit */
@@ -206,22 +234,26 @@ export function UnifiedEditor({
 
   // Track missing required fields after type changes
   const missingFields = useMemo(() => {
-    const selectableType = document.document_type as SelectableDocumentType;
-    if (['wiki', 'issue', 'project', 'sprint'].includes(selectableType)) {
-      // Build properties object from document
+    const docType = document.document_type;
+    if (docType === 'wiki' || docType === 'issue' || docType === 'project' || docType === 'sprint') {
+      // Build properties object from document's type-specific fields
       const props: Record<string, unknown> = {
         ...document.properties,
-        // Include top-level fields that might be required
-        state: (document as IssueDocument).state,
-        priority: (document as IssueDocument).priority,
-        impact: (document as ProjectDocument).impact,
-        confidence: (document as ProjectDocument).confidence,
-        ease: (document as ProjectDocument).ease,
-        start_date: (document as SprintDocument).start_date,
-        end_date: (document as SprintDocument).end_date,
-        status: (document as SprintDocument).status,
       };
-      return getMissingRequiredFields(selectableType, props);
+      // Extract type-specific top-level fields via type guards
+      if (isIssueDocument(document)) {
+        props.state = document.state;
+        props.priority = document.priority;
+      } else if (isProjectDocument(document)) {
+        props.impact = document.impact;
+        props.confidence = document.confidence;
+        props.ease = document.ease;
+      } else if (isSprintDocument(document)) {
+        props.start_date = document.start_date;
+        props.end_date = document.end_date;
+        props.status = document.status;
+      }
+      return getMissingRequiredFields(docType, props);
     }
     return [];
   }, [document]);
@@ -240,9 +272,9 @@ export function UnifiedEditor({
     setIsChangingType(true);
     try {
       if (onTypeChange) {
-        await onTypeChange(newType as DocumentType);
+        await onTypeChange(newType);
       } else {
-        await onUpdate({ document_type: newType as DocumentType } as Partial<UnifiedDocument>);
+        await onUpdate({ document_type: newType });
       }
     } finally {
       setIsChangingType(false);
@@ -262,7 +294,7 @@ export function UnifiedEditor({
   const handlePlanChange = useCallback(async (plan: string) => {
     if (document.document_type !== 'sprint' && document.document_type !== 'project') return;
     // Update the plan property
-    await onUpdate({ plan } as Partial<UnifiedDocument>);
+    await onUpdate({ plan });
   }, [document.document_type, onUpdate]);
 
   // Determine room prefix based on document type if not provided
@@ -291,15 +323,16 @@ export function UnifiedEditor({
   const panelProps = useMemo(() => {
     switch (document.document_type) {
       case 'wiki': {
-        const wikiData = sidebarData as WikiSidebarData;
-        return {
+        const wikiData = narrowSidebarData(sidebarData, 'wiki');
+        const result: WikiPanelProps = {
           teamMembers: wikiData.teamMembers || [],
           currentUserId: user?.id,
-        } as WikiPanelProps;
+        };
+        return result;
       }
       case 'issue': {
-        const issueData = sidebarData as IssueSidebarData;
-        return {
+        const issueData = narrowSidebarData(sidebarData, 'issue');
+        const result: IssuePanelProps = {
           teamMembers: issueData.teamMembers || [],
           programs: issueData.programs || [],
           projects: issueData.projects || [],
@@ -310,31 +343,35 @@ export function UnifiedEditor({
           isConverting: issueData.isConverting,
           isUndoing: issueData.isUndoing,
           onAssociationChange: issueData.onAssociationChange,
-        } as IssuePanelProps;
+        };
+        return result;
       }
       case 'project': {
-        const projectData = sidebarData as ProjectSidebarData;
-        return {
+        const projectData = narrowSidebarData(sidebarData, 'project');
+        const result: ProjectPanelProps = {
           programs: projectData.programs || [],
           people: projectData.people || [],
           onConvert: projectData.onConvert,
           onUndoConversion: projectData.onUndoConversion,
           isConverting: projectData.isConverting,
           isUndoing: projectData.isUndoing,
-        } as ProjectPanelProps;
+        };
+        return result;
       }
       case 'sprint': {
-        const sprintData = sidebarData as SprintSidebarData;
-        return {
+        const sprintData = narrowSidebarData(sidebarData, 'sprint');
+        const result: SprintPanelProps = {
           people: sprintData.people || [],
           existingSprints: sprintData.existingSprints || [],
-        } as SprintPanelProps;
+        };
+        return result;
       }
       case 'program': {
-        const programData = sidebarData as ProgramSidebarData;
-        return {
+        const programData = narrowSidebarData(sidebarData, 'program');
+        const result: ProgramPanelProps = {
           people: programData.people || [],
-        } as ProgramPanelProps;
+        };
+        return result;
       }
       default:
         return {};

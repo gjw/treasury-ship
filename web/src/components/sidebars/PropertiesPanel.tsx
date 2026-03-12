@@ -466,9 +466,8 @@ export function PropertiesPanel({
     // For sprints, also check program_accountable_id (inherited from program)
     // and supervisor relationship (reports_to on the sprint owner's person document)
     if (document.document_type === 'sprint') {
-      const sprintDoc = document as SprintDocument;
-      if (sprintDoc.program_accountable_id === user.id) return true;
-      if (sprintDoc.owner_reports_to === user.id) return true;
+      if (document.program_accountable_id === user.id) return true;
+      if (document.owner_reports_to === user.id) return true;
     }
 
     return false;
@@ -500,7 +499,7 @@ export function PropertiesPanel({
         const wikiProps = panelProps as WikiPanelProps;
         return (
           <WikiSidebar
-            document={document as WikiDocument}
+            document={document}
             teamMembers={wikiProps.teamMembers || []}
             currentUserId={wikiProps.currentUserId}
             onUpdate={onUpdate as (updates: Partial<WikiDocument>) => Promise<void>}
@@ -512,7 +511,7 @@ export function PropertiesPanel({
         const issueProps = panelProps as IssuePanelProps;
         return (
           <IssueSidebar
-            issue={document as IssueDocument}
+            issue={document}
             teamMembers={issueProps.teamMembers || []}
             programs={issueProps.programs || []}
             projects={issueProps.projects || []}
@@ -533,7 +532,7 @@ export function PropertiesPanel({
         const projectProps = panelProps as ProjectPanelProps;
         return (
           <ProjectSidebar
-            project={document as ProjectDocument}
+            project={document}
             programs={projectProps.programs || []}
             people={projectProps.people || []}
             onUpdate={onUpdate as (updates: Partial<ProjectDocument>) => Promise<void>}
@@ -553,7 +552,7 @@ export function PropertiesPanel({
         const sprintProps = panelProps as SprintPanelProps;
         return (
           <WeekSidebar
-            sprint={document as SprintDocument}
+            sprint={document}
             onUpdate={onUpdate as (updates: Partial<SprintDocument>) => Promise<void>}
             highlightedFields={highlightedFields}
             people={sprintProps.people}
@@ -569,7 +568,7 @@ export function PropertiesPanel({
         const programProps = panelProps as ProgramPanelProps;
         return (
           <ProgramSidebar
-            program={document as ProgramDocument}
+            program={document}
             people={programProps.people || []}
             onUpdate={onUpdate as (updates: Partial<ProgramDocument>) => Promise<void>}
             highlightedFields={highlightedFields}
@@ -579,26 +578,25 @@ export function PropertiesPanel({
 
       case 'weekly_plan':
       case 'weekly_retro': {
-        // Weekly plan and retro documents get a minimal sidebar with history panel
-        // Names are fetched via WeeklyDocumentSidebar component
         return (
           <WeeklyDocumentSidebar
-            document={document as WeeklyPlanDocument | WeeklyRetroDocument}
+            document={document}
             weeklyReviewState={weeklyReviewState}
           />
         );
       }
 
-      default:
-        // TypeScript narrows to never here since all cases are handled
-        // Cast to BaseDocument to access document_type for the fallback display
+      default: {
+        // Exhaustive check — all PanelDocumentType cases handled above
+        const _exhaustive: never = document;
         return (
           <div className="p-4">
             <p className="text-xs text-muted">
-              Document type: {(document as BaseDocument).document_type}
+              Unknown document type
             </p>
           </div>
         );
+      }
     }
   }, [document, panelProps, onUpdate, highlightedFields, canApprove, userNames, handleApprovalUpdate, weeklyReviewState]);
 

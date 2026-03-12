@@ -105,14 +105,17 @@ export const issueKeys = {
   detail: (id: string) => [...issueKeys.details(), id] as const,
 };
 
-// Transform API issue response to Issue type
-function transformIssue(apiIssue: Record<string, unknown>): Issue {
-  const belongs_to = (apiIssue.belongs_to as BelongsTo[]) || [];
+// API response shape for an issue (before belongs_to normalization)
+interface ApiIssueResponse extends Omit<Issue, 'belongs_to'> {
+  belongs_to?: BelongsTo[];
+}
 
+// Transform API issue response to Issue type
+function transformIssue(apiIssue: ApiIssueResponse): Issue {
   return {
     ...apiIssue,
-    belongs_to,
-  } as Issue;
+    belongs_to: apiIssue.belongs_to ?? [],
+  };
 }
 
 // Fetch issues with optional filters
@@ -131,8 +134,8 @@ async function fetchIssues(filters?: IssueFilters): Promise<Issue[]> {
     error.status = res.status;
     throw error;
   }
-  const data = await res.json();
-  let issues = (data as Record<string, unknown>[]).map(transformIssue);
+  const data: ApiIssueResponse[] = await res.json();
+  let issues = data.map(transformIssue);
 
   // Client-side filter for projectId (API doesn't support direct project_id param)
   if (filters?.projectId) {
