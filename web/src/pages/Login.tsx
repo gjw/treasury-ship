@@ -71,7 +71,11 @@ export function LoginPage() {
   }, [searchParams]);
 
   // Default redirect path from location state or returnTo param
-  const from = returnTo || (location.state as { from?: { pathname: string } })?.from?.pathname || '/';
+  const locationState = location.state;
+  const fromPath = locationState && typeof locationState === 'object' && 'from' in locationState
+    && locationState.from && typeof locationState.from === 'object' && 'pathname' in locationState.from
+    && typeof locationState.from.pathname === 'string' ? locationState.from.pathname : undefined;
+  const from = returnTo || fromPath || '/';
 
   // Check if setup is needed and if PIV auth is available
   useEffect(() => {

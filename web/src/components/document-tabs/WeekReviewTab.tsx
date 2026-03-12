@@ -13,11 +13,11 @@ import type { DocumentTabProps } from '@/lib/document-tabs';
  */
 export default function SprintReviewTab({ documentId, document }: DocumentTabProps) {
   // Get program_id from belongs_to array (sprint's parent program via document_associations)
-  const belongsTo = (document as { belongs_to?: Array<{ id: string; type: string }> }).belongs_to;
+  const belongsTo = document.belongs_to;
   const programId = belongsTo?.find(b => b.type === 'program')?.id;
   // Get sprint properties
-  const properties = document.properties as { sprint_number?: number } | undefined;
-  const sprintNumber = properties?.sprint_number ?? 1;
+  const properties = document.properties;
+  const sprintNumber = typeof properties?.sprint_number === 'number' ? properties.sprint_number : 1;
 
   return (
     <div className="flex h-full flex-col overflow-hidden">

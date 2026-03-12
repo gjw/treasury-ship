@@ -109,7 +109,7 @@ export default function SprintOverviewTab({ documentId, document }: DocumentTabP
   }), [people, existingSprints]);
 
   // Get program_id from belongs_to array (sprint's parent program via document_associations)
-  const belongsTo = (document as { belongs_to?: Array<{ id: string; type: string }> }).belongs_to;
+  const belongsTo = document.belongs_to;
   const programId = belongsTo?.find(b => b.type === 'program')?.id;
 
   // Transform to UnifiedDocument format

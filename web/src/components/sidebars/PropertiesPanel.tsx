@@ -459,9 +459,8 @@ export function PropertiesPanel({
     if (isWorkspaceAdmin) return true;
     if (!user?.id) return false;
 
-    // Check document's accountable_id (used by projects)
-    const docWithAccountable = document as { accountable_id?: string | null };
-    if (docWithAccountable.accountable_id === user.id) return true;
+    // Check document's accountable_id (used by projects, sprints, programs)
+    if ('accountable_id' in document && document.accountable_id === user.id) return true;
 
     // For sprints, also check program_accountable_id (inherited from program)
     // and supervisor relationship (reports_to on the sprint owner's person document)
@@ -477,9 +476,8 @@ export function PropertiesPanel({
   const userNames = useMemo(() => {
     const names: Record<string, string> = {};
     // Try to get people from various panel props
-    const props = panelProps as { people?: Array<{ id?: string; user_id?: string; name: string }> };
-    if (props.people) {
-      props.people.forEach(p => {
+    if ('people' in panelProps && Array.isArray(panelProps.people)) {
+      panelProps.people.forEach((p: { id?: string; user_id?: string; name: string }) => {
         if (p.user_id) names[p.user_id] = p.name;
         if (p.id) names[p.id] = p.name;
       });

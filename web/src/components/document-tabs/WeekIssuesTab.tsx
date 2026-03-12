@@ -12,7 +12,7 @@ import type { DocumentTabProps } from '@/lib/document-tabs';
  */
 export default function SprintIssuesTab({ documentId, document }: DocumentTabProps) {
   // Get program_id from belongs_to array (sprint's parent program via document_associations)
-  const belongsTo = (document as { belongs_to?: Array<{ id: string; type: string }> }).belongs_to;
+  const belongsTo = document.belongs_to;
   const programId = belongsTo?.find(b => b.type === 'program')?.id;
 
   return (
