@@ -2,17 +2,34 @@
 
 **Bead:** treasury-ship-q6y
 **Branch:** task/q6y-type-safety-f1f2
-**Commits:** 2 (F1 checkpoint + F2)
+
+## Relationship to Assignment (GFA Week 4)
+
+The PDF assignment (Category 1: Type Safety) asks to **eliminate 25% of type safety violations**, measured by `any`, `as`, `!`, and `@ts-ignore/@ts-expect-error` counts. It also asks: "Is strict mode enabled?" and "Strict mode error count (if disabled)."
+
+**F1 (strict flags) does not directly reduce the violation counts.** It hardens the compiler so that new classes of bugs become compile errors — specifically, unchecked array/record indexing, implicit returns, and switch fallthrough. The 102 errors it surfaced were fixed with runtime guards (not `!` assertions), which means the code is genuinely safer at runtime. But the `any`, `as`, and `!` baselines don't move as a result.
+
+**We kept F1 intentionally** because:
+
+1. The PDF's audit deliverable explicitly asks whether strict mode is enabled and what the error count would be — these flags are directly relevant to that question.
+2. The fixes are real runtime safety improvements (e.g., guarding against `undefined` from array indexing), not cosmetic.
+3. `noFallthroughCasesInSwitch` is particularly valuable for the unified document model's discriminated unions.
+
+**F2 (cast elimination) directly targets the 25% goal.** It removes 27 `as DomainType` casts and 10 `!` assertions, replacing them with proper type narrowing and runtime guards.
+
+**For the final report:** Count F2's reductions toward the 25% target. Frame F1 as a separate strict-mode hardening improvement with its own before/after (0 → 3 additional strict flags enabled; 102 latent type errors surfaced and fixed with runtime guards).
 
 ## Before/After Counts
 
 Using audit grep methodology (`rg '\bas\s+[A-Z]' --type ts web/src/ | grep -v test|spec|import|export`):
 
-| Metric | Before | After | Delta |
-|--------|--------|-------|-------|
-| `any` usage | 27 | 27 | 0 |
-| `as X` casts | 171 | 144 | **-27** |
-| Non-null assertions (`!`) | 10 | 0 | **-10** |
+| Metric | Before | After | Delta | Counts toward 25%? |
+|--------|--------|-------|-------|---------------------|
+| `any` usage | 27 | 27 | 0 | — |
+| `as X` casts | 171 | 144 | **-27** | Yes (F2) |
+| Non-null assertions (`!`) | 10 | 0 | **-10** | Yes (F2) |
+| Strict flags added | 0 | 3 | +3 | No — separate metric |
+| Latent errors surfaced & fixed | 0 | 102 | — | No — runtime safety, not violation count |
 
 ## F1: Strict tsconfig flags (22 files, 102 errors fixed)
 
@@ -68,4 +85,4 @@ pnpm dev                                 # Start dev server, manual verify
 
 - `UnifiedDocument` includes `BaseDocument` as a catch-all, which prevents discriminated union narrowing on `document_type`. Type guards are needed to narrow past it. Consider removing `BaseDocument` from the union in a future cleanup (treasury-ship-t53 may address this).
 - `PanelDocument` in PropertiesPanel does NOT include `BaseDocument`, so its discriminated union narrows correctly in switch cases.
-- The `as Error & { status: number }` pattern in hooks (useDocumentsQuery, useProjectsQuery, etc.) is F3 scope (treasury-ship-t53), not addressed here.
+- The `as Error & { status: number }` pattern in hooks (useDocumentsQuery, useProjectsQuery, etc.) is F5 scope (treasury-ship-1f7), not addressed here.
