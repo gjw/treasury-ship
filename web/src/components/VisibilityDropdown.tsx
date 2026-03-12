@@ -15,8 +15,8 @@ const options = [
 
 export function VisibilityDropdown({ value, onChange, disabled = false }: VisibilityDropdownProps) {
   const [open, setOpen] = useState(false);
-  // options[1] is always 'workspace' — static 2-element array
-  const selected = options.find((o) => o.value === value) ?? options[1]!;
+  const selected = options.find((o) => o.value === value);
+  if (!selected) return null;
   const SelectedIcon = selected.icon;
 
   return (

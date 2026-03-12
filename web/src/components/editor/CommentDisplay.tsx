@@ -70,7 +70,8 @@ function InlineCommentThread({
   onReply: ((commentId: string, content: string) => void) | null;
   onResolve: ((commentId: string, resolved: boolean) => void) | null;
 }) {
-  const root = thread[0]!;
+  const root = thread[0];
+  if (!root) return document.createElement('div');
   const replies = thread.slice(1);
   const isResolved = root.resolved_at !== null;
 
@@ -208,7 +209,9 @@ export const CommentDisplayExtension = Extension.create<Record<string, never>, C
 
             // Add inline decorations to dim resolved comment highlights
             for (const [commentId, thread] of threads.entries()) {
-              const isResolved = thread[0]!.resolved_at !== null;
+              const threadRoot = thread[0];
+              if (!threadRoot) continue;
+              const isResolved = threadRoot.resolved_at !== null;
               if (isResolved) {
                 doc.descendants((node: any, pos: number) => {
                   if (node.isText) {
@@ -254,7 +257,7 @@ export const CommentDisplayExtension = Extension.create<Record<string, never>, C
                 });
               }, {
                 side: 1, // Render after the position
-                key: `comment-${commentId}-${thread.length}-${thread[0]!.resolved_at || 'open'}`,
+                key: `comment-${commentId}-${thread.length}-${thread[0]?.resolved_at || 'open'}`,
               });
 
               decorations.push(widget);

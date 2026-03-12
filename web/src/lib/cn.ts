@@ -16,10 +16,11 @@ export function getContrastTextColor(hexColor: string): string {
   if (hexColor.startsWith('#')) {
     const hex = hexColor.slice(1);
     if (hex.length === 3) {
-      // length === 3 guarantees indices 0, 1, 2 exist
-      r = parseInt(hex[0]! + hex[0]!, 16);
-      g = parseInt(hex[1]! + hex[1]!, 16);
-      b = parseInt(hex[2]! + hex[2]!, 16);
+      const h0 = hex[0], h1 = hex[1], h2 = hex[2];
+      if (!h0 || !h1 || !h2) return '#000000';
+      r = parseInt(h0 + h0, 16);
+      g = parseInt(h1 + h1, 16);
+      b = parseInt(h2 + h2, 16);
     } else {
       r = parseInt(hex.slice(0, 2), 16);
       g = parseInt(hex.slice(2, 4), 16);
@@ -27,11 +28,10 @@ export function getContrastTextColor(hexColor: string): string {
     }
   } else if (hexColor.startsWith('rgb')) {
     const match = hexColor.match(/rgb\((\d+),\s*(\d+),\s*(\d+)\)/);
-    if (match) {
-      // Regex has 3 capture groups, so match[1..3] are guaranteed
-      r = parseInt(match[1]!, 10);
-      g = parseInt(match[2]!, 10);
-      b = parseInt(match[3]!, 10);
+    if (match && match[1] && match[2] && match[3]) {
+      r = parseInt(match[1], 10);
+      g = parseInt(match[2], 10);
+      b = parseInt(match[3], 10);
     } else {
       return '#000000'; // Default to black for unparseable colors
     }

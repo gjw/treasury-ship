@@ -105,19 +105,17 @@ interface TimelineDay {
 }
 
 function buildTimeline(actionItems: ActionItem[], weekNumber: number): TimelineDay[] {
+  const monday: TimelineDay = { label: 'Mon', rituals: [] };
+  const thursday: TimelineDay = { label: 'Thu', rituals: [] };
   const days: TimelineDay[] = [
-    { label: 'Mon', rituals: [] },
+    monday,
     { label: 'Tue', rituals: [] },
     { label: 'Wed', rituals: [] },
-    { label: 'Thu', rituals: [] },
+    thursday,
     { label: 'Fri', rituals: [] },
     { label: 'Sat', rituals: [] },
     { label: 'Sun', rituals: [] },
   ];
-
-  // Static 7-element array — indices 0 and 3 are guaranteed
-  const monday = days[0]!;
-  const thursday = days[3]!;
 
   // Plans are due Monday
   const planItem = actionItems.find(a => a.type === 'plan' && a.sprint_number === weekNumber);

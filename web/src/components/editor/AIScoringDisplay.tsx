@@ -125,10 +125,14 @@ function matchAnalysisToListItems(
 
   // First pass: exact normalized matches
   for (let li = 0; li < listItems.length; li++) {
-    const normalizedLi = normalizeText(listItems[li]!.text);
+    const listItem = listItems[li];
+    if (!listItem) continue;
+    const normalizedLi = normalizeText(listItem.text);
     for (let ai = 0; ai < analysisItems.length; ai++) {
       if (usedAnalysis.has(ai)) continue;
-      const normalizedAi = normalizeText(analysisItems[ai]!.text);
+      const analysisItem = analysisItems[ai];
+      if (!analysisItem) continue;
+      const normalizedAi = normalizeText(analysisItem.text);
       if (normalizedLi === normalizedAi) {
         matches.set(li, ai);
         usedAnalysis.add(ai);
@@ -140,11 +144,15 @@ function matchAnalysisToListItems(
   // Second pass: prefix/substring matching for unmatched items
   for (let li = 0; li < listItems.length; li++) {
     if (matches.has(li)) continue;
-    const normalizedLi = normalizeText(listItems[li]!.text);
+    const listItem = listItems[li];
+    if (!listItem) continue;
+    const normalizedLi = normalizeText(listItem.text);
 
     for (let ai = 0; ai < analysisItems.length; ai++) {
       if (usedAnalysis.has(ai)) continue;
-      const normalizedAi = normalizeText(analysisItems[ai]!.text);
+      const analysisItem = analysisItems[ai];
+      if (!analysisItem) continue;
+      const normalizedAi = normalizeText(analysisItem.text);
 
       if (normalizedLi.startsWith(normalizedAi) || normalizedAi.startsWith(normalizedLi)) {
         matches.set(li, ai);
@@ -243,8 +251,9 @@ export const AIScoringDisplayExtension = Extension.create<Record<string, never>,
               const matches = matchAnalysisToListItems(listItems, planAnalysis.items);
 
               for (const [listIdx, analysisIdx] of matches) {
-                const listItem = listItems[listIdx]!;
-                const analysisItem = planAnalysis.items[analysisIdx]!;
+                const listItem = listItems[listIdx];
+                const analysisItem = planAnalysis.items[analysisIdx];
+                if (!listItem || !analysisItem) continue;
 
                 const widget = Decoration.widget(listItem.endPos, () => {
                   return createPlanFeedbackWidget(analysisItem);
@@ -266,8 +275,9 @@ export const AIScoringDisplayExtension = Extension.create<Record<string, never>,
               const matches = matchAnalysisToListItems(listItems, coverageItems);
 
               for (const [listIdx, coverageIdx] of matches) {
-                const listItem = listItems[listIdx]!;
-                const coverageItem = retroAnalysis.plan_coverage[coverageIdx]!;
+                const listItem = listItems[listIdx];
+                const coverageItem = retroAnalysis.plan_coverage[coverageIdx];
+                if (!listItem || !coverageItem) continue;
 
                 const widget = Decoration.widget(listItem.endPos, () => {
                   return createRetroCoverageWidget(coverageItem);
