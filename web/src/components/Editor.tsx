@@ -9,7 +9,6 @@ import Link from '@tiptap/extension-link';
 import { ResizableImage } from './editor/ResizableImage';
 import Dropcursor from '@tiptap/extension-dropcursor';
 import CodeBlockLowlight from '@tiptap/extension-code-block-lowlight';
-import { common, createLowlight } from 'lowlight';
 import Table from '@tiptap/extension-table';
 import TableRow from '@tiptap/extension-table-row';
 import TableCell from '@tiptap/extension-table-cell';
@@ -42,8 +41,13 @@ import { useCommentsQuery, useCreateComment, useUpdateComment } from '@/hooks/us
 import { BubbleMenu } from '@tiptap/react';
 import 'tippy.js/dist/tippy.css';
 
-// Create lowlight instance with common languages
-const lowlight = createLowlight(common);
+// Lazy-load lowlight (highlight.js grammars, ~378KB) — fires when this chunk
+// loads, resolves before the editor mounts in most cases.
+type LowlightModule = typeof import('lowlight');
+type Lowlight = ReturnType<Awaited<LowlightModule>['createLowlight']>;
+const lowlightReady: Promise<Lowlight> = import('lowlight').then(
+  ({ createLowlight, common }) => createLowlight(common),
+);
 
 interface EditorProps {
   documentId: string;
@@ -527,6 +531,16 @@ export function Editor({
     });
   }, [onNavigateToDocument]);
 
+  // Lazy-load syntax highlighting (lowlight grammars)
+  const [lowlight, setLowlight] = useState<Lowlight | null>(null);
+  useEffect(() => {
+    let cancelled = false;
+    lowlightReady.then((ll) => {
+      if (!cancelled) setLowlight(ll);
+    });
+    return () => { cancelled = true; };
+  }, []);
+
   // Comments - fetch and manage inline comments
   const { data: comments = [] } = useCommentsQuery(documentId);
   const createComment = useCreateComment(documentId);
@@ -543,14 +557,12 @@ export function Editor({
     StarterKit.configure({
       history: false,
       dropcursor: false,
-      codeBlock: false, // Disable default code block to use CodeBlockLowlight
+      codeBlock: lowlight ? false : undefined, // Disable default when highlight loaded
     }),
-    CodeBlockLowlight.configure({
+    ...(lowlight ? [CodeBlockLowlight.configure({
       lowlight,
-      HTMLAttributes: {
-        class: 'code-block-lowlight',
-      },
-    }),
+      HTMLAttributes: { class: 'code-block-lowlight' },
+    })] : []),
     Placeholder.configure({ placeholder }),
     Collaboration.configure({ document: ydoc }),
     Link.configure({
@@ -624,7 +636,7 @@ export function Editor({
         class: 'prose prose-invert prose-sm max-w-none focus:outline-none min-h-[300px]',
       },
     },
-  }, [provider, documentType]);
+  }, [provider, documentType, lowlight]);
 
   // Refs for stable comment callbacks (avoid re-render loops)
   const commentsRef = useRef(comments);
