@@ -2,6 +2,11 @@ import { describe, it, expect, vi, beforeEach, afterEach, Mock } from 'vitest';
 import { renderHook, act } from '@testing-library/react';
 import { useSessionTimeout } from './useSessionTimeout';
 
+// Mock apiPost to avoid CSRF token fetch chain in tests
+vi.mock('@/lib/api', () => ({
+  apiPost: vi.fn().mockResolvedValue({ ok: true }),
+}));
+
 /**
  * Unit Tests for useSessionTimeout Hook
  *
