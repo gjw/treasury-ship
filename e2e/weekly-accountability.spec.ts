@@ -450,24 +450,29 @@ test.describe('Project Allocation Grid API', () => {
     });
     const plan = await planResponse.json();
 
-    // Get allocation grid
-    const gridResponse = await page.request.get(
-      `${apiServer.url}/api/weekly-plans/project-allocation-grid/${projectId}`
-    );
+    // Get allocation grid and verify person data.
+    // Root cause of flake: the allocation grid aggregates data across sprints,
+    // issues, and weekly plans. After creating these via sequential API calls,
+    // the grid query may not immediately reflect all associations (e.g. the
+    // sprint PATCH assigning the person may not be visible to the grid query
+    // on the first attempt). The original `if (week1Data)` guard silently
+    // skipped assertions when data wasn't ready, making the test vacuously
+    // pass. Using toPass() polls until the grid returns complete data.
+    await expect(async () => {
+      const gridResponse = await page.request.get(
+        `${apiServer.url}/api/weekly-plans/project-allocation-grid/${projectId}`
+      );
+      expect(gridResponse.ok(), `Expected 200 OK but got ${gridResponse.status()}`).toBe(true);
+      const grid = await gridResponse.json();
 
-    expect(gridResponse.ok(), `Expected 200 OK but got ${gridResponse.status()}`).toBe(true);
-    const grid = await gridResponse.json();
+      const personInGrid = grid.people.find((p: { id: string }) => p.id === personId);
+      expect(personInGrid, 'Person should appear in allocation grid').toBeTruthy();
 
-    // Find person in grid
-    const personInGrid = grid.people.find((p: { id: string }) => p.id === personId);
-    expect(personInGrid, 'Person should appear in allocation grid').toBeTruthy();
-
-    // Person should have week 1 data
-    const week1Data = personInGrid.weeks[1];
-    if (week1Data) {
+      const week1Data = personInGrid.weeks[1];
+      expect(week1Data, 'Person should have week 1 allocation data').toBeTruthy();
       expect(week1Data.isAllocated).toBe(true);
       expect(week1Data.planId).toBe(plan.id);
-    }
+    }).toPass({ timeout: 10000, intervals: [1000] });
   });
 
   test('Allocation grid returns 404 for non-existent project', async ({ page, apiServer }) => {
