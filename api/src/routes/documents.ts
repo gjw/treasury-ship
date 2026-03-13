@@ -7,6 +7,7 @@ import { handleVisibilityChange, handleDocumentConversion, invalidateDocumentCac
 import { extractHypothesisFromContent, extractSuccessCriteriaFromContent, extractVisionFromContent, extractGoalsFromContent, checkDocumentCompleteness } from '../utils/extractHypothesis.js';
 import { loadContentFromYjsState } from '../utils/yjsConverter.js';
 import type { SqlParam } from '../types/sql.js';
+import { bulkInsertAssociations, bulkDeleteAssociations } from '../utils/document-crud.js';
 
 type RouterType = ReturnType<typeof Router>;
 const router: RouterType = Router();
@@ -559,16 +560,9 @@ router.post('/', authMiddleware, async (req: Request, res: Response) => {
 
     const newDoc = result.rows[0];
 
-    // Handle belongs_to associations (creates document_associations records)
+    // Handle belongs_to associations (single bulk INSERT)
     if (belongs_to && belongs_to.length > 0) {
-      for (const assoc of belongs_to) {
-        await client.query(
-          `INSERT INTO document_associations (document_id, related_id, relationship_type)
-           VALUES ($1, $2, $3)
-           ON CONFLICT (document_id, related_id, relationship_type) DO NOTHING`,
-          [newDoc.id, assoc.id, assoc.type]
-        );
-      }
+      await bulkInsertAssociations(client, newDoc.id, belongs_to);
     }
 
     // Handle sprint_id via document_associations (backward compatibility)
@@ -871,27 +865,13 @@ router.patch('/:id', authMiddleware, async (req: Request, res: Response) => {
       const currentSet = new Set(currentAssocs.rows.map(r => `${r.relationship_type}:${r.related_id}`));
       const newSet = new Set(newBelongsTo.map(bt => `${bt.type}:${bt.id}`));
 
-      // Remove associations that are no longer present
-      for (const row of currentAssocs.rows) {
-        const key = `${row.relationship_type}:${row.related_id}`;
-        if (!newSet.has(key)) {
-          await client.query(
-            'DELETE FROM document_associations WHERE document_id = $1 AND related_id = $2 AND relationship_type = $3',
-            [id, row.related_id, row.relationship_type]
-          );
-        }
-      }
+      // Remove associations that are no longer present (single bulk DELETE)
+      const toRemove = currentAssocs.rows.filter(row => !newSet.has(`${row.relationship_type}:${row.related_id}`));
+      await bulkDeleteAssociations(client, id, toRemove);
 
-      // Add new associations
-      for (const bt of newBelongsTo) {
-        const key = `${bt.type}:${bt.id}`;
-        if (!currentSet.has(key)) {
-          await client.query(
-            'INSERT INTO document_associations (document_id, related_id, relationship_type) VALUES ($1, $2, $3) ON CONFLICT DO NOTHING',
-            [id, bt.id, bt.type]
-          );
-        }
-      }
+      // Add new associations (single bulk INSERT)
+      const toAdd = newBelongsTo.filter(bt => !currentSet.has(`${bt.type}:${bt.id}`));
+      await bulkInsertAssociations(client, id, toAdd);
     }
 
     // Handle sprint_id via document_associations (when passed directly, not via belongs_to)

@@ -8,6 +8,7 @@ import {
   getTimestampUpdates,
   getBelongsToAssociations,
   getBelongsToAssociationsBatch,
+  bulkInsertAssociations,
   TRACKED_FIELDS,
   type BelongsToEntry,
 } from '../utils/document-crud.js';
@@ -623,15 +624,8 @@ router.post('/', authMiddleware, async (req: Request, res: Response) => {
 
     const newIssueId = result.rows[0].id;
 
-    // Create associations from belongs_to array
-    for (const assoc of belongs_to) {
-      await client.query(
-        `INSERT INTO document_associations (document_id, related_id, relationship_type)
-         VALUES ($1, $2, $3)
-         ON CONFLICT (document_id, related_id, relationship_type) DO NOTHING`,
-        [newIssueId, assoc.id, assoc.type]
-      );
-    }
+    // Create associations from belongs_to array (single bulk INSERT)
+    await bulkInsertAssociations(client, newIssueId, belongs_to);
 
     await client.query('COMMIT');
 
@@ -941,15 +935,8 @@ router.patch('/:id', authMiddleware, async (req: Request, res: Response) => {
         [id]
       );
 
-      // Insert new associations
-      for (const assoc of newBelongsTo) {
-        await client.query(
-          `INSERT INTO document_associations (document_id, related_id, relationship_type)
-           VALUES ($1, $2, $3)
-           ON CONFLICT (document_id, related_id, relationship_type) DO NOTHING`,
-          [id, assoc.id, assoc.type]
-        );
-      }
+      // Insert new associations (single bulk INSERT)
+      await bulkInsertAssociations(client, id, newBelongsTo);
     }
 
     // Fetch the updated issue
