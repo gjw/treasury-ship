@@ -194,6 +194,7 @@ export function ProjectCombobox({
                 value={search}
                 onValueChange={setSearch}
                 placeholder="Search projects..."
+                aria-label="Search projects"
                 className="w-full bg-transparent text-sm text-foreground placeholder:text-muted focus:outline-none"
               />
             </div>
