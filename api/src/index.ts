@@ -10,6 +10,18 @@ const __dirname = dirname(__filename);
 config({ path: join(__dirname, '../.env.local') });
 config({ path: join(__dirname, '../.env') });
 
+// Process-level error handlers — catch unhandled async rejections and
+// uncaught exceptions so they are logged instead of crashing silently
+process.on('unhandledRejection', (reason, promise) => {
+  console.error('[Process] Unhandled promise rejection:', reason);
+  console.error('[Process] Promise:', promise);
+});
+
+process.on('uncaughtException', (err) => {
+  console.error('[Process] Uncaught exception — exiting:', err);
+  process.exit(1);
+});
+
 async function main() {
   // Load secrets from SSM in production (before importing app)
   if (process.env.NODE_ENV === 'production') {

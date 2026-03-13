@@ -183,7 +183,13 @@ function schedulePersist(docName: string, doc: Y.Doc) {
   if (existing) clearTimeout(existing);
 
   pendingSaves.set(docName, setTimeout(() => {
-    persistDocument(docName, doc);
+    const docId = parseDocId(docName);
+    persistDocument(docName, doc).catch((err) => {
+      console.error(`[Collaboration] Scheduled persist failed for ${docName} (${docId}), retrying once:`, err);
+      persistDocument(docName, doc).catch((retryErr) => {
+        console.error(`[Collaboration] Retry persist also failed for ${docName} (${docId}):`, retryErr);
+      });
+    });
     pendingSaves.delete(docName);
   }, 2000));
 }
@@ -766,7 +772,13 @@ export function setupCollaboration(server: Server) {
         const pending = pendingSaves.get(docName);
         if (pending) {
           clearTimeout(pending);
-          persistDocument(docName, doc);
+          const docId = parseDocId(docName);
+          persistDocument(docName, doc).catch((err) => {
+            console.error(`[Collaboration] Disconnect persist failed for ${docName} (${docId}), retrying once:`, err);
+            persistDocument(docName, doc).catch((retryErr) => {
+              console.error(`[Collaboration] Retry persist also failed for ${docName} (${docId}):`, retryErr);
+            });
+          });
           pendingSaves.delete(docName);
         }
 
