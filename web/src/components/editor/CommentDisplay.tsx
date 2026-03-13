@@ -1,4 +1,5 @@
 import { Extension } from '@tiptap/core';
+import type { Node as PMNode } from '@tiptap/pm/model';
 import { Plugin, PluginKey } from '@tiptap/pm/state';
 import { Decoration, DecorationSet } from '@tiptap/pm/view';
 import { createRoot, Root } from 'react-dom/client';
@@ -23,10 +24,10 @@ function groupByThread(comments: Comment[]): Map<string, Comment[]> {
  * Find all comment mark positions in the document.
  * Returns a map of commentId -> end position of the containing block.
  */
-function findCommentPositions(doc: any): Map<string, number> {
+function findCommentPositions(doc: PMNode): Map<string, number> {
   const positions = new Map<string, number>();
 
-  doc.descendants((node: any, pos: number) => {
+  doc.descendants((node, pos) => {
     if (node.isText) {
       for (const mark of node.marks) {
         if (mark.type.name === 'commentMark' && mark.attrs.commentId) {
@@ -213,7 +214,7 @@ export const CommentDisplayExtension = Extension.create<Record<string, never>, C
               if (!threadRoot) continue;
               const isResolved = threadRoot.resolved_at !== null;
               if (isResolved) {
-                doc.descendants((node: any, pos: number) => {
+                doc.descendants((node, pos) => {
                   if (node.isText) {
                     for (const mark of node.marks) {
                       if (mark.type.name === 'commentMark' && mark.attrs.commentId === commentId) {
@@ -235,7 +236,7 @@ export const CommentDisplayExtension = Extension.create<Record<string, never>, C
 
               // Find the quoted text for this comment
               let quotedText = '';
-              doc.descendants((node: any, pos: number) => {
+              doc.descendants((node, pos) => {
                 if (node.isText) {
                   for (const mark of node.marks) {
                     if (
