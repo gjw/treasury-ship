@@ -150,6 +150,9 @@ export function WeekReconciliation({
 
       setPendingAction(null);
     },
+    onError: () => {
+      setPendingAction(null);
+    },
   });
 
   // Mutation to return issue to backlog
@@ -180,6 +183,9 @@ export function WeekReconciliation({
 
       setPendingAction(null);
     },
+    onError: () => {
+      setPendingAction(null);
+    },
   });
 
   // Mutation to close issue (done or cancelled)
@@ -206,6 +212,9 @@ export function WeekReconciliation({
         timestamp: new Date().toISOString(),
       });
 
+      setPendingAction(null);
+    },
+    onError: () => {
       setPendingAction(null);
     },
   });
