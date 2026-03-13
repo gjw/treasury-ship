@@ -8,7 +8,7 @@ import {
   extractTicketNumbersFromContents,
   batchLookupIssues,
 } from '../utils/transformIssueLinks.js';
-import { logDocumentChange, getLatestDocumentFieldHistory } from '../utils/document-crud.js';
+import { logDocumentChange, getLatestDocumentFieldHistory, bulkInsertAssociations } from '../utils/document-crud.js';
 import { broadcastToUser } from '../collaboration/index.js';
 import { extractText } from '../utils/document-content.js';
 import type { SqlParam } from '../types/sql.js';
@@ -2640,30 +2640,38 @@ router.post('/:id/carryover', authMiddleware, async (req: Request, res: Response
     try {
       await client.query('BEGIN');
 
-      for (const issueId of issue_ids) {
-        // Delete the sprint association from source sprint
-        await client.query(
-          `DELETE FROM document_associations
-           WHERE document_id = $1 AND related_id = $2 AND relationship_type = 'sprint'`,
-          [issueId, sourceSprintId]
-        );
+      // Bulk delete old sprint associations (1 query instead of N)
+      await client.query(
+        `DELETE FROM document_associations
+         WHERE document_id = ANY($1) AND related_id = $2 AND relationship_type = 'sprint'`,
+        [issue_ids, sourceSprintId]
+      );
 
-        // Create new sprint association to target sprint
+      // Bulk insert new sprint associations (1 query instead of N)
+      // Each row has a different document_id, so we build VALUES clause directly
+      {
+        const values: unknown[] = [];
+        const placeholders: string[] = [];
+        for (let i = 0; i < issue_ids.length; i++) {
+          const offset = i * 3;
+          placeholders.push(`($${offset + 1}, $${offset + 2}, $${offset + 3})`);
+          values.push(issue_ids[i], target_sprint_id, 'sprint');
+        }
         await client.query(
           `INSERT INTO document_associations (document_id, related_id, relationship_type)
-           VALUES ($1, $2, 'sprint')
+           VALUES ${placeholders.join(', ')}
            ON CONFLICT (document_id, related_id, relationship_type) DO NOTHING`,
-          [issueId, target_sprint_id]
-        );
-
-        // Set carryover_from_sprint_id in the issue properties
-        await client.query(
-          `UPDATE documents
-           SET properties = properties || $1::jsonb, updated_at = now()
-           WHERE id = $2`,
-          [JSON.stringify({ carryover_from_sprint_id: sourceSprintId }), issueId]
+          values
         );
       }
+
+      // Bulk update carryover properties (1 query instead of N)
+      await client.query(
+        `UPDATE documents
+         SET properties = properties || $1::jsonb, updated_at = now()
+         WHERE id = ANY($2)`,
+        [JSON.stringify({ carryover_from_sprint_id: sourceSprintId }), issue_ids]
+      );
 
       await client.query('COMMIT');
     } catch (txErr) {

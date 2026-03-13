@@ -5,6 +5,7 @@
  * All functions operate on the unified document model.
  */
 
+import pg from 'pg';
 import { pool } from '../db/client.js';
 
 // =============================================================================
@@ -178,6 +179,60 @@ export async function getBelongsToAssociationsBatch(
   }
 
   return associationsMap;
+}
+
+/**
+ * Bulk insert document_associations rows in a single INSERT with VALUES clause.
+ * Uses the caller's PoolClient to participate in their transaction.
+ * Short-circuits on empty array.
+ */
+export async function bulkInsertAssociations(
+  client: pg.PoolClient,
+  documentId: string,
+  associations: ReadonlyArray<{ id: string; type: string }>
+): Promise<void> {
+  if (associations.length === 0) return;
+
+  const values: unknown[] = [];
+  const placeholders: string[] = [];
+  for (let i = 0; i < associations.length; i++) {
+    const offset = i * 3;
+    placeholders.push(`($${offset + 1}, $${offset + 2}, $${offset + 3})`);
+    values.push(documentId, associations[i]!.id, associations[i]!.type);
+  }
+
+  await client.query(
+    `INSERT INTO document_associations (document_id, related_id, relationship_type)
+     VALUES ${placeholders.join(', ')}
+     ON CONFLICT (document_id, related_id, relationship_type) DO NOTHING`,
+    values
+  );
+}
+
+/**
+ * Bulk delete specific document_associations rows in a single query.
+ * Uses the caller's PoolClient to participate in their transaction.
+ */
+export async function bulkDeleteAssociations(
+  client: pg.PoolClient,
+  documentId: string,
+  associations: ReadonlyArray<{ related_id: string; relationship_type: string }>
+): Promise<void> {
+  if (associations.length === 0) return;
+
+  const values: unknown[] = [documentId];
+  const conditions: string[] = [];
+  for (let i = 0; i < associations.length; i++) {
+    const offset = values.length;
+    conditions.push(`(related_id = $${offset + 1} AND relationship_type = $${offset + 2})`);
+    values.push(associations[i]!.related_id, associations[i]!.relationship_type);
+  }
+
+  await client.query(
+    `DELETE FROM document_associations
+     WHERE document_id = $1 AND (${conditions.join(' OR ')})`,
+    values
+  );
 }
 
 /**
