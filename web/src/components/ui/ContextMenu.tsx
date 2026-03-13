@@ -197,7 +197,7 @@ export function ContextMenuItem({ onClick, disabled, destructive, children, inde
         'flex items-center gap-2',
         'hover:bg-border/50 transition-colors',
         'disabled:opacity-50 disabled:cursor-not-allowed',
-        'outline-none focus:bg-border/50',
+        'outline-none focus:bg-border/50 focus-visible:ring-1 focus-visible:ring-accent',
         destructive ? 'text-red-400 hover:text-red-300' : 'text-foreground'
       )}
     >

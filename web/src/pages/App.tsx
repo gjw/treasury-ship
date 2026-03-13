@@ -302,6 +302,7 @@ export function AppLayout() {
             <button
               onClick={() => setWorkspaceSwitcherOpen(!workspaceSwitcherOpen)}
               className="flex h-8 w-8 items-center justify-center rounded-lg bg-accent/20 text-accent hover:bg-accent/30 transition-colors"
+              aria-label="Switch workspace"
               title={currentWorkspace?.name || 'Select workspace'}
             >
               {currentWorkspace?.name?.charAt(0).toUpperCase() || 'W'}
@@ -410,6 +411,7 @@ export function AppLayout() {
             <button
               onClick={logout}
               className="flex h-8 w-8 items-center justify-center rounded-full bg-accent/80 text-xs font-medium text-white hover:bg-accent transition-colors"
+              aria-label="User menu"
               title={`${user?.name} - Click to logout`}
             >
               {user?.name?.charAt(0).toUpperCase() || 'U'}

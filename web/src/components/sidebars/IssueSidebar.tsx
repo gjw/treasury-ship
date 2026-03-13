@@ -314,6 +314,7 @@ export function IssueSidebar({
                 value={rejectReason}
                 onChange={(e) => setRejectReason(e.target.value)}
                 placeholder="Reason for rejection..."
+                aria-label="Rejection reason"
                 className="w-full rounded border border-border bg-border/50 px-2 py-1.5 text-sm text-foreground placeholder:text-muted focus:outline-none focus:ring-1 focus:ring-accent"
                 rows={2}
               />

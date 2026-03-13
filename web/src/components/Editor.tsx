@@ -952,6 +952,7 @@ export function Editor({
                 el.style.height = `${el.scrollHeight}px`;
               }}
               placeholder="Untitled"
+              aria-label="Document title"
               readOnly={titleReadOnly}
               rows={1}
               className={cn(

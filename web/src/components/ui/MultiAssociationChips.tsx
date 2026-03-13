@@ -2,6 +2,20 @@ import { useState, useRef, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import type { BelongsTo, BelongsToType } from '@ship/shared';
 
+/** Lighten a hex color if it's too dark for text on dark backgrounds (WCAG 4.5:1) */
+function accessibleChipText(hex: string): string {
+  const c = hex.replace('#', '');
+  if (c.length !== 6) return hex;
+  const r = parseInt(c.slice(0, 2), 16);
+  const g = parseInt(c.slice(2, 4), 16);
+  const b = parseInt(c.slice(4, 6), 16);
+  // Perceived brightness (YIQ). Threshold ~128 ensures 4.5:1 on #0d0d0d.
+  const brightness = (r * 299 + g * 587 + b * 114) / 1000;
+  if (brightness >= 128) return hex;
+  const lift = (v: number) => Math.min(255, Math.round(v + (255 - v) * 0.3));
+  return `#${[lift(r), lift(g), lift(b)].map(v => v.toString(16).padStart(2, '0')).join('')}`;
+}
+
 interface AssociationOption {
   id: string;
   name: string;
@@ -110,7 +124,7 @@ export function MultiAssociationChips({
             className="inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-medium"
             style={{
               backgroundColor: assoc.color ? `${assoc.color}20` : 'var(--color-border)',
-              color: assoc.color || 'var(--color-foreground)',
+              color: assoc.color ? accessibleChipText(assoc.color) : 'var(--color-foreground)',
               border: `1px solid ${assoc.color || 'var(--color-border)'}`,
             }}
           >
@@ -175,6 +189,7 @@ export function MultiAssociationChips({
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
                   placeholder="Search..."
+                  aria-label="Search associations"
                   className="w-full rounded bg-border px-2 py-1 text-sm text-foreground placeholder:text-muted focus:outline-none focus:ring-1 focus:ring-accent"
                 />
               </div>

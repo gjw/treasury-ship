@@ -68,7 +68,12 @@ input::placeholder {
 }
 
 /* Prevent focus outline on editor wrapper elements */
-.tiptap-wrapper:focus-visible,
+.tiptap-wrapper:focus-visible {
+  outline: 2px solid #005ea2;
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
 .tiptap-wrapper > div:focus-visible,
 .ProseMirror:focus-visible {
   outline: none;
