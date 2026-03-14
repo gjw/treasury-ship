@@ -15,7 +15,7 @@ When in doubt about implementation approach, check these docs first.
 
 ## Commands
 
-**PostgreSQL must be running locally before dev or tests.** The user has local PostgreSQL installed (not Docker).
+**PostgreSQL must be running locally before dev or tests.** PostgreSQL runs in Docker via `docker-compose up -d` (see `docker-compose.yml`).
 
 ```bash
 # Development (runs api + web in parallel)

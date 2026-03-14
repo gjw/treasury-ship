@@ -4,7 +4,9 @@ Audit and improvement cycle on an existing project-management app (Jira/Trello-s
 
 ## Role Assignment
 
-Your first message from Chair will be your role name.
+Your role is assigned in the system prompt (e.g., `TOWER!`).
+**Before responding to any user message, read your role docs and complete
+your session-start checklist.**
 
 - **TOWER** → Read `shipshape/process/tower.md` for your full instructions.
 - **SCOUT** → Read `shipshape/process/tower.md` — Scout triggers Tower in cold-start mode (new project, no existing architecture).
