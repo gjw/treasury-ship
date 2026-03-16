@@ -1,0 +1,28 @@
+<script src="https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.min.js"></script>
+<script>
+mermaid.initialize({
+  startOnLoad: false,
+  theme: 'dark',
+  themeVariables: {
+    darkMode: true,
+    background: '#191919',
+    primaryColor: '#1a3a5c',
+    primaryTextColor: '#fff',
+    lineColor: '#4a9eff',
+    textColor: '#fff'
+  }
+});
+document.querySelectorAll('.literalblock .content pre, .listingblock .content pre').forEach(function(el) {
+  var text = el.textContent;
+  if (text.match(/(%%.*)?(graph|pie|xychart|sequenceDiagram|flowchart|gantt)/m)) {
+    // el.textContent already decodes HTML entities, but innerHTML does not
+    // Use textContent to get clean mermaid source
+    var div = document.createElement('div');
+    div.className = 'mermaid';
+    div.textContent = text;
+    var container = el.closest('.literalblock') || el.closest('.listingblock');
+    container.replaceWith(div);
+  }
+});
+mermaid.run();
+</script>

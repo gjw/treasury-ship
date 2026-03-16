@@ -1,0 +1,212 @@
+= ShipShape: Improvement Report
+Gabriel Wilkins — Gauntlet for America, ShipShape Week 4
+:revealjsdir: https://cdn.jsdelivr.net/npm/reveal.js@5.1.0
+:revealjs_theme: black
+:revealjs_transition: slide
+:revealjs_slideNumber: true
+:revealjs_hash: true
+:revealjs_width: 1600
+:revealjs_height: 900
+:icons: font
+:source-highlighter: highlight.js
+:imagesdir: charts
+
+// Compile: asciidoctor-revealjs -r asciidoctor-diagram slides.adoc
+
+== What We Did
+
+[cols="<2,>2", options="header", width="90%"]
+|===
+| Category | Result
+
+| Type Safety | *-30.4%* violations (522 → 363)
+| Bundle Size | *-77.3%* initial load (2,074 → 471 KB)
+| API Response Time | *-23% / -38%* P95 on 2 endpoints
+| DB Query Efficiency | *-97%* queries on bulk move (152 → 5)
+| Test Coverage | *99.8%* pass rate (16 tests fixed)
+| Runtime Errors | *3 gaps* fixed (1 data-loss path)
+| Accessibility | *45 → 0* serious violations
+|===
+
+== Type Safety
+
+* *522 → 363 violations* (30.4% reduction, target was 25%)
+* 5 implementation passes: strict flags, cast elimination, `any` removal, `ApiError` class
+* Replaced 100 unsafe `as` casts with type guards and discriminated union narrowing
+* Eliminated 63 `any` types with proper interfaces (`SqlParam`, `TipTapNode`, `ApiIssueResponse`)
+* Zero `@ts-ignore` or `@ts-nocheck` in the codebase — before or after
+* Lesson: getting types right from day one is 10x easier than unwinding sloppy types after other code depends on them
+
+== Type Safety — By The Numbers
+
+image::type-safety.svg[Type safety before/after,width=80%]
+
+*Total: 522 → 363 (-30.4%)* — Before (blue) vs After (green)
+
+== Bundle Size
+
+[.big]
+*2,074 KB → 471 KB*
+
+[.big]
+*-77.3% initial page load*
+
+* Every page was in one monolithic bundle — login downloaded the entire app
+* `React.lazy()` on all 21 page components — each page loads on demand
+* Lazy-loaded emoji-picker (271 KB), highlight.js (172 KB), diff-match-patch (20 KB)
+* Total bundle size unchanged (+1%) — same code, just loaded when needed
+
+== Bundle Size — What Changed
+
+image::bundle-split.svg[Bundle split diagram,width=50%]
+
+== API Response Time
+
+[cols="<3,>2,>2,>2", options="header", width="80%"]
+|===
+| Endpoint | Before (P95) | After (P95) | Change
+
+| `GET /api/issues`
+| 68.8 ms
+| 52.9 ms
+| *-23%*
+
+| `GET /api/projects`
+| 21.5 ms
+| 13.4 ms
+| *-38%*
+|===
+
+* *Issues:* Removed `content` column from list query — 312 KB payload the frontend never used
+* *Projects:* Replaced 45 correlated subqueries with 3 CTEs — one pass per table
+* Both fixes are single-file, single-query changes — zero frontend impact
+
+== DB Query Efficiency
+
+[.big]
+*152 → 5 queries*
+
+[.big]
+*-97% on bulk sprint move*
+
+* N+1 pattern: 3 INSERT statements per association instead of 1 bulk INSERT
+* Bulk move: DELETE + INSERT + UPDATE *per issue* in a loop — 50 issues = 150 queries
+* Fix: `bulkInsertAssociations()` and `bulkDeleteAssociations()` utilities
+* Issue create: 10 → 8 queries (-20%)
+
+== DB Query Efficiency — Bulk Move
+
+image::db-bulk-move.svg[DB bulk move diagram,width=90%]
+
+== Test Coverage
+
+[cols="<3,>2,>2", options="header", width="80%"]
+|===
+| Suite | Before | After
+
+| Web unit tests
+| 138 pass / *13 fail*
+| *151 pass / 0 fail*
+
+| Flaky E2E tests
+| *3 flaky*
+| *0 flaky*
+
+| Total pass rate
+| 98.8%
+| *99.8%*
+|===
+
+* 9 failures: tab IDs renamed (`sprints` → `weeks`), tests never updated
+* 3 failures: `DetailsExtension` content model refactored, tests stale
+* 1 failure: session timeout mock didn't handle new CSRF flow
+* 3 flaky: cache invalidation timing — fixed with API polling + full page loads
+
+== Runtime Error Handling
+
+* *Gap 1 — Data Loss:* `persistDocument()` called without `.catch()` in collaboration server
+** User edits silently lost if DB write fails on disconnect
+** Fix: catch + single retry + structured logging
+* *Gap 2 — Silent Crashes:* No `process.on('unhandledRejection')` handler
+** Any unhandled async error killed the server with zero log output
+** Fix: process-level handlers with error logging
+* *Gap 3 — Stuck UI:* 3 of 4 sprint reconciliation mutations had no `onError`
+** Button disabled permanently on API failure, no feedback to user
+** Fix: `onError` resets pending state; global toast handler shows error
+
+== Accessibility
+
+[.big]
+*45 → 0 serious violations*
+
+* All 45 were color contrast failures (WCAG 2.1 AA, 4.5:1 minimum)
+* Introduced `accent-light` (#3b9bd6, 6.46:1 ratio) for dark theme readability
+* Replaced sub-threshold `text-muted/50` opacity variants with full-opacity muted
+* Added 5 missing ARIA labels, 2 focus indicators, accessible chip text colors
+* Lighthouse scores: already 96-100 pre-fix (1 failed audit = only -4 points)
+
+== Accessibility — Contrast Fix
+
+[cols="<3,>2,>2,>2", options="header", width="90%"]
+|===
+| Pattern | Elements | Before Ratio | After Ratio
+
+| `text-accent` on dark bg
+| 16
+| 2.55:1 FAIL
+| *6.46:1 PASS*
+
+| `text-muted/50` on dark bg
+| 25
+| 2.26:1 FAIL
+| *5.55:1 PASS*
+
+| `text-muted` on elevated bg
+| 4
+| 3.65:1 FAIL
+| *5.11:1 PASS*
+|===
+
+== How We Worked
+
+[cols="^1,^1,^1", options="header", width="90%"]
+|===
+| Audit | Implement | Verify
+
+a|
+* Measure baseline
+* Rank by severity / effort
+* Write task + criteria
+
+a|
+* Isolated worktree
+* Write fix + change doc
+* Before/after proof
+
+a|
+* Review diff
+* Run tests
+* Merge to master
+|===
+
+Measure first, fix second, prove everything.
+
+== Philosophy
+
+* *Conservative:* No stack changes, no new dependencies, no behavioral changes
+* *Safe:* Every fix verified with `pnpm type-check` and `pnpm test`
+* *Measurable:* Before/after proof for every category — no claims without data
+* *Honest:* Skipped findings documented with rationale, not hidden
+* *Targeted:* Fix the root cause, not the symptom — depth over breadth
+
+[.big]
+*Proof over promises.*
+
+== Thank You
+
+Ship — US Department of the Treasury
+
+* 7 categories audited and improved
+* 21 change documents with before/after measurements
+* Every improvement reproducible from the git history
+* All code, measurements, and documentation in the repository
